@@ -83,4 +83,4 @@ jobs:
     
     - name: Test Fluent Operator
       run: |
-        export ENABLE_K8S=true && export ENABLE_FLUENTD=yes && export ENABLE_ES=yes && export ENABLE_KAFKA=yes && chmod +x ./deploy-fluent-operator.sh && bash ./deploy-fluent-operator.sh
+        export ENABLE_K8S=yes && export ENABLE_FLUENTD=yes && export ENABLE_ES=yes && export ENABLE_KAFKA=yes && chmod +x ./deploy-fluent-operator.sh && bash ./deploy-fluent-operator.sh
