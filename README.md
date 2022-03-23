@@ -1,6 +1,14 @@
 # fluent-operator-devtools
 
-Fluent Operator Devtools
+- [fluent-operator-devtools](#fluent-operator-devtools)
+  - [Create Kind Cluster](#create-kind-cluster)
+  - [Startup Storage](#startup-storage)
+    - [Startup Kafka Cluster](#startup-kafka-cluster)
+    - [Startup ES Cluster](#startup-es-cluster)
+  - [Startup Fluent Operator](#startup-fluent-operator)
+    - [Fluent Bit Log Pipleline](#fluent-bit-log-pipleline)
+    - [Fluentd Log Pipleline](#fluentd-log-pipleline)
+    - [Multi-tenant Scenario Solution](#multi-tenant-scenario-solution)
 
 ## Create Kind Cluster
 
@@ -322,7 +330,7 @@ Please visit https://github.com/fluent/fluent-operator/tree/master/manifests/flu
    
 ```bash
 # kubectl -n kubesphere-logging-system get secrets fluentd-config -ojson | jq '.data."app.conf"' | awk -F '"' '{printf $2}' | base64 --decode 
-
+---
 <source>
   @type  forward
   bind  0.0.0.0
@@ -369,8 +377,9 @@ Please visit https://github.com/fluent/fluent-operator/tree/master/manifests/flu
 ```
 
 5. Query the elastic cluster kubernetes_ns buckets:
-```
-kubectl -n elastic exec -it elasticsearch-master-0 -c elasticsearch --  curl -X GET "localhost:9200/ks-logstash*/_search?pretty" -H 'Content-Type: application/json' -d '{                                                           
+
+```bash
+# kubectl -n elastic exec -it elasticsearch-master-0 -c elasticsearch --  curl -X GET "localhost:9200/ks-logstash*/_search?pretty" -H 'Content-Type: application/json' -d '{                                                           
    "size" : 0,
    "aggs" : {
       "kubernetes_ns": {
@@ -383,7 +392,8 @@ kubectl -n elastic exec -it elasticsearch-master-0 -c elasticsearch --  curl -X 
 ```
 
 6. Check the kafka cluster:
-```
+   
+```bash
 # kubectl -n kafka exec -it my-cluster-kafka-0 -- bin/kafka-console-consumer.sh --bootstrap-server my-cluster-kafka-bootstrap:9092 --topic ks-log
 ```
 
