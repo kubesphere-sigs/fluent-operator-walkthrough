@@ -6,7 +6,7 @@ LOGGING_NAMESPACE=${LOGGING_NAMESPACE:-kubesphere-logging-system}
 SET_FLAGS=""
 
 ELASTIC_SERVICE="elasticsearch-master.elastic.svc"
-KAFKA_BROKERS="my-cluster-kafka-bootstrap.kafka.svc:9091,my-cluster-kafka-bootstrap.kafka.svc:9092,my-cluster-kafka-bootstrap.kafka.svc:9093"
+KAFKA_BROKERS='my-cluster-kafka-bootstrap.kafka.svc:9091\,my-cluster-kafka-bootstrap.kafka.svc:9092\,my-cluster-kafka-bootstrap.kafka.svc:9093'
 
 if [[ "${INSTALL_HELM:-no}" == "yes" ]]; then
     # See https://helm.sh/docs/intro/install/
@@ -49,9 +49,8 @@ if [[ "${ENABLE_FLUENTD:-no}" == "yes" && "${ENABLE_KAFKA:-no}" == "yes" ]]; the
     SET_FLAGS="${SET_FLAGS} --set fluentd.output.kafka.enable=true --set fluentd.output.kafka.brokers=$KAFKA_BROKERS"
 fi
 
-echo "${SET_FLAGS}"
+helm upgrade --install fluent-operator --create-namespace -n $LOGGING_NAMESPACE --wait --timeout 60s https://github.com/fluent/fluent-operator/releases/download/v1.0.0-rc.0/fluent-operator.tgz ${SET_FLAGS}
 
-helm upgrade --install fluent-operator --create-namespace -n $LOGGING_NAMESPACE --wait --timeout=60s https://github.com/fluent/fluent-operator/releases/download/v1.0.0-rc.0/fluent-operator.tgz "$SET_FLAGS"
-
+echo -e "\n"
 kubectl -n $LOGGING_NAMESPACE wait --for=condition=available deployment/fluent-operator --timeout=60s
 echo "Please visit https://github.com/fluent/fluent-operator/tree/master/manifests/fluentd to apply the manifests that you want to explore."
