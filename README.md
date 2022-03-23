@@ -208,7 +208,7 @@ Please visit https://github.com/fluent/fluent-operator/tree/master/manifests/flu
 # kubectl -n kafka exec -it my-cluster-kafka-0 -- bin/kafka-console-consumer.sh --bootstrap-server my-cluster-kafka-bootstrap:9092 --topic ks-log
 ```
 
-### Fluentd Log Pipleline: Multi-tenant Scenario Solution
+### Fluentd Log Pipleline
 
 1. Start up the Fluent Operator with both Fluent Bit and Fluentd log pipeline:
 
@@ -339,6 +339,14 @@ Please visit https://github.com/fluent/fluent-operator/tree/master/manifests/flu
   </route>
 </match>
 <label @48b7cb809bc2361ba336802a95eca0d4>
+  <filter **>
+    @id  ClusterFluentdConfig-cluster-fluentd-config::cluster::clusterfilter::fluentd-filter-0
+    @type  record_transformer
+    enable_ruby  true
+    <record>
+      kubernetes_ns  ${record["kubernetes"]["namespace_name"]
+    </record>
+  </filter>
   <match **>
     @id  ClusterFluentdConfig-cluster-fluentd-config::cluster::clusteroutput::fluentd-output-es-0
     @type  elasticsearch
@@ -360,13 +368,25 @@ Please visit https://github.com/fluent/fluent-operator/tree/master/manifests/flu
 </label>
 ```
 
-5. Check the elastic cluster index counts:
+5. Query the elastic cluster kubernetes_ns buckets:
 ```
-# kubectl -n elastic exec -it elasticsearch-master-0 -c elasticsearch -- curl -XGET localhost:9200/ks-*/_count
-{"count":1343862,"_shards":{"total":6,"successful":6,"skipped":0,"failed":0}}
+kubectl -n elastic exec -it elasticsearch-master-0 -c elasticsearch --  curl -X GET "localhost:9200/ks-logstash*/_search?pretty" -H 'Content-Type: application/json' -d '{                                                           
+   "size" : 0,
+   "aggs" : {
+      "kubernetes_ns": {
+         "terms" : {
+           "field": "kubernetes.namespace_name.keyword"
+         }
+      }
+   }
+}'
 ```
 
 6. Check the kafka cluster:
 ```
 # kubectl -n kafka exec -it my-cluster-kafka-0 -- bin/kafka-console-consumer.sh --bootstrap-server my-cluster-kafka-bootstrap:9092 --topic ks-log
 ```
+
+### Multi-tenant Scenario Solution
+
+See https://github.com/fluent/fluent-operator/tree/master/manifests/fluentd
