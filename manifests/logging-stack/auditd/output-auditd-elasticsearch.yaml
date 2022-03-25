@@ -1,0 +1,16 @@
+apiVersion: fluentbit.fluent.io
+kind: ClusterOutput
+metadata:
+  name: auditd-to-es
+  labels:
+    fluentbit.fluent.io/enabled: "true"
+    fluentbit.fluent.io/component: logging
+spec:
+  matchRegex: auditd
+  es:
+    host: elasticsearch-master.elastic.svc
+    port: 9200
+    generateID: true
+    logstashPrefix: ks-logstash-log
+    logstashFormat: true
+    timeKey: "@timestamp"
