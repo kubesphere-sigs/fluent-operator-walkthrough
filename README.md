@@ -10,8 +10,8 @@
     - [Create Fluent Bit Daemonset using FluentBit CRD](#create-fluent-bit-daemonset-using-fluentbit-crd)
     - [Create Fluentd Statefulset using Fluentd CRD](#create-fluentd-statefulset-using-fluentd-crd)
   - [Fluent Bit Only mode](#fluent-bit-only-mode)
-    - [Using Fluent Bit to collect K8s logs and send to es](#using-fluent-bit-to-collect-k8s-logs-and-send-to-es)
-    - [Using Fluent Bit to collect auditd log](#using-fluent-bit-to-collect-auditd-log)
+    - [Using Fluent Bit to collect docker logs and send to es](#using-fluent-bit-to-collect-docker-logs-and-send-to-es)
+    - [Using Fluent Bit to collect k8s logs and send to kafka](#using-fluent-bit-to-collect-k8s-logs-and-send-to-kafka)
   - [Fluent Bit + Fluentd mode](#fluent-bit--fluentd-mode)
     - [Enable Fluent Bit forward plugin](#enable-fluent-bit-forward-plugin)
     - [ClusterFluentdConfig: Fluentd cluster-wide configuration](#clusterfluentdconfig-fluentd-cluster-wide-configuration)
@@ -59,7 +59,7 @@ apiVersion: fluentbit.fluent.io/v1alpha2
 kind: FluentBit
 metadata:
   name: fluent-bit
-  namespace: kubesphere-logging-system
+  namespace: fluent
   labels:
     app.kubernetes.io/name: fluent-bit
 spec:
@@ -95,7 +95,7 @@ apiVersion: fluentd.fluent.io/v1alpha1
 kind: Fluentd
 metadata:
   name: fluentd
-  namespace: kubesphere-logging-system
+  namespace: fluent
   labels:
     app.kubernetes.io/name: fluentd
 spec:
@@ -113,7 +113,7 @@ EOF
 
 ## Fluent Bit Only mode
 
-### Using Fluent Bit to collect K8s logs and send to es
+### Using Fluent Bit to collect docker logs and send to es
 
 ```shell
 cat <<EOF | kubectl apply -f -
@@ -121,7 +121,7 @@ apiVersion: fluentbit.fluent.io/v1alpha2
 kind: FluentBit
 metadata:
   name: fluent-bit
-  namespace: kubesphere-logging-system
+  namespace: fluent
   labels:
     app.kubernetes.io/name: fluent-bit
 spec:
@@ -183,6 +183,126 @@ spec:
       - _SYSTEMD_UNIT=docker.service
 ---
 apiVersion: fluentbit.fluent.io/v1alpha2
+kind: ClusterFilter
+metadata:
+  name: systemd
+  labels:
+    fluentbit.fluent.io/enabled: "true"
+    fluentbit.fluent.io/component: logging
+spec:
+  match: service.*
+  filters:
+  - lua:
+      script:
+        key: systemd.lua
+        name: fluent-bit-lua
+      call: add_time
+      timeAsTable: true
+---
+apiVersion: v1
+data:
+  systemd.lua: |
+    function add_time(tag, timestamp, record)
+      new_record = {}
+      timeStr = os.date("!*t", timestamp["sec"])
+      t = string.format("%4d-%02d-%02dT%02d:%02d:%02d.%sZ",
+    		timeStr["year"], timeStr["month"], timeStr["day"],
+    		timeStr["hour"], timeStr["min"], timeStr["sec"],
+    		timestamp["nsec"])
+      kubernetes = {}
+      kubernetes["pod_name"] = record["_HOSTNAME"]
+      kubernetes["container_name"] = record["SYSLOG_IDENTIFIER"]
+      kubernetes["namespace_name"] = "kube-system"
+      new_record["time"] = t
+      new_record["log"] = record["MESSAGE"]
+      new_record["kubernetes"] = kubernetes
+      return 1, timestamp, new_record
+    end
+kind: ConfigMap
+metadata:
+  labels:
+    app.kubernetes.io/component: operator
+    app.kubernetes.io/name: fluent-bit-lua
+  name: fluent-bit-lua
+  namespace: fluent
+---
+apiVersion: fluentbit.fluent.io/v1alpha2
+kind: ClusterOutput
+metadata:
+  name: es
+  labels:
+    fluentbit.fluent.io/enabled: "true"
+    fluentbit.fluent.io/component: logging
+spec:
+  matchRegex: (?:kube|service)\.(.*)
+  es:
+    host: elasticsearch-master.elastic.svc
+    port: 9200
+    generateID: true
+    logstashPrefix: ks-logstash-log
+    logstashFormat: true
+    timeKey: "@timestamp"  
+EOF
+```
+
+Within a couple of minutes, you should check the results in ES cluster.
+
+> you can refer the following docs to check results.
+
+### Using Fluent Bit to collect k8s logs and send to kafka
+
+```shell
+cat <<EOF | kubectl apply -f -
+apiVersion: fluentbit.fluent.io/v1alpha2
+kind: FluentBit
+metadata:
+  name: fluent-bit
+  namespace: fluent
+  labels:
+    app.kubernetes.io/name: fluent-bit
+spec:
+  image: kubesphere/fluent-bit:v1.8.3
+  positionDB:
+    hostPath:
+      path: /var/lib/fluent-bit/
+  resources:
+    requests:
+      cpu: 10m
+      memory: 25Mi
+    limits:
+      cpu: 500m
+      memory: 200Mi
+  fluentBitConfigName: fluent-bit-config
+  tolerations:
+    - operator: Exists
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: node-role.kubernetes.io/edge
+            operator: DoesNotExist
+---
+apiVersion: fluentbit.fluent.io/v1alpha2
+kind: ClusterFluentBitConfig
+metadata:
+  name: fluent-bit-config
+  labels:
+    app.kubernetes.io/name: fluent-bit
+spec:
+  service:
+    parsersFile: parsers.conf
+  inputSelector:
+    matchLabels:
+      fluentbit.fluent.io/enabled: "true"
+  filterSelector:
+    matchLabels:
+      fluentbit.fluent.io/enabled: "true"
+  outputSelector:
+    matchLabels:
+      fluentbit.fluent.io/enabled: "true"
+---
+apiVersion: fluentbit.fluent.io/v1alpha2
 kind: ClusterInput
 metadata:
   name: kubelet
@@ -215,6 +335,51 @@ spec:
     skipLongLines: true
     db: /fluent-bit/tail/pos.db
     dbSync: Normal
+---
+---
+apiVersion: fluentbit.fluent.io/v1alpha2
+kind: ClusterFilter
+metadata:
+  name: systemd
+  labels:
+    fluentbit.fluent.io/enabled: "true"
+    fluentbit.fluent.io/component: logging
+spec:
+  match: service.*
+  filters:
+  - lua:
+      script:
+        key: systemd.lua
+        name: fluent-bit-lua
+      call: add_time
+      timeAsTable: true
+---
+apiVersion: v1
+data:
+  systemd.lua: |
+    function add_time(tag, timestamp, record)
+      new_record = {}
+      timeStr = os.date("!*t", timestamp["sec"])
+      t = string.format("%4d-%02d-%02dT%02d:%02d:%02d.%sZ",
+    		timeStr["year"], timeStr["month"], timeStr["day"],
+    		timeStr["hour"], timeStr["min"], timeStr["sec"],
+    		timestamp["nsec"])
+      kubernetes = {}
+      kubernetes["pod_name"] = record["_HOSTNAME"]
+      kubernetes["container_name"] = record["SYSLOG_IDENTIFIER"]
+      kubernetes["namespace_name"] = "kube-system"
+      new_record["time"] = t
+      new_record["log"] = record["MESSAGE"]
+      new_record["kubernetes"] = kubernetes
+      return 1, timestamp, new_record
+    end
+kind: ConfigMap
+metadata:
+  labels:
+    app.kubernetes.io/component: operator
+    app.kubernetes.io/name: fluent-bit-lua
+  name: fluent-bit-lua
+  namespace: fluent
 ---
 apiVersion: fluentbit.fluent.io/v1alpha2
 kind: ClusterFilter
@@ -269,23 +434,6 @@ spec:
 apiVersion: fluentbit.fluent.io/v1alpha2
 kind: ClusterOutput
 metadata:
-  name: es
-  labels:
-    fluentbit.fluent.io/enabled: "true"
-    fluentbit.fluent.io/component: logging
-spec:
-  matchRegex: (?:kube|service)\.(.*)
-  es:
-    host: elasticsearch-master.elastic.svc
-    port: 9200
-    generateID: true
-    logstashPrefix: ks-logstash-log
-    logstashFormat: true
-    timeKey: "@timestamp"
----
-apiVersion: fluentbit.fluent.io/v1alpha2
-kind: ClusterOutput
-metadata:
   name: kafka
   labels:
     fluentbit.fluent.io/enabled: "false"
@@ -297,147 +445,6 @@ spec:
     topics: ks-log
 EOF
 ```
-
-Within a couple of minutes, you should check the results in ES cluster or KAFKA cluster.
-
-> you can refer the following docs to check results.
-
-### Using Fluent Bit to collect auditd log
-
-```shell
-cat <<EOF | kubectl apply -f -
-apiVersion: fluentbit.fluent.io/v1alpha2
-kind: FluentBit
-metadata:
-  name: fluent-bit
-  namespace: kubesphere-logging-system
-  labels:
-    app.kubernetes.io/name: fluent-bit
-spec:
-  image: kubesphere/fluent-bit:v1.8.3
-  positionDB:
-    hostPath:
-      path: /var/lib/fluent-bit/
-  resources:
-    requests:
-      cpu: 10m
-      memory: 25Mi
-    limits:
-      cpu: 500m
-      memory: 200Mi
-  fluentBitConfigName: fluent-bit-config
-  tolerations:
-    - operator: Exists
-  affinity:
-    nodeAffinity:
-      requiredDuringSchedulingIgnoredDuringExecution:
-        nodeSelectorTerms:
-        - matchExpressions:
-          - key: node-role.kubernetes.io/edge
-            operator: DoesNotExist
----
-apiVersion: fluentbit.fluent.io/v1alpha2
-kind: ClusterFluentBitConfig
-metadata:
-  name: fluent-bit-config
-  labels:
-    app.kubernetes.io/name: fluent-bit
-spec:
-  inputSelector:
-    matchLabels:
-      fluentbit.fluent.io/enabled: "true"
-  filterSelector:
-    matchLabels:
-      fluentbit.fluent.io/enabled: "true"
-  outputSelector:
-    matchLabels:
-      fluentbit.fluent.io/enabled: "true"
----
-apiVersion: fluentbit.fluent.io
-kind: ClusterInput
-metadata:
-  name: auditd-input
-  labels:
-    fluentbit.fluent.io/enabled: "true"
-    fluentbit.fluent.io/component: logging
-spec:
-  tail:
-    tag: auditd
-    path: /var/log/audit/audit.log
-    refreshIntervalSeconds: 10
-    memBufLimit: 5MB
-    db: /tail/auditd.db
-    dbSync: Normal
----
-apiVersion: fluentbit.fluent.io
-kind: ClusterFilter
-metadata:
-  name: filter-audit-logs
-  labels:
-    fluentbit.fluent.io/enabled: "true"
-    fluentbit.fluent.io/component: logging
-spec:
-  match: auditd
-  filters:
-  - recordModifier:
-      records:
-      - node_name ${NODE_NAME}
-  - lua:
-      script:
-        key: auditd.lua
-        name: fluent-bit-auditd-config
-      call: cb_replace
-      timeAsTable: true
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: fluent-bit-auditd-config
-  namespace: kubesphere-logging-system
-data:
-  auditd.lua: |
-    function cb_replace(tag, timestamp, record)
-      if (record["log"] == nil) 
-      then
-          return  0, 0, 0
-          end
-
-      local new_record = {}
-      timeStr = os.date("!*t", timestamp["sec"])
-      t = string.format("%4d-%02d-%02dT%02d:%02d:%02d.%sZ",
-        timeStr["year"], timeStr["month"], timeStr["day"],
-        timeStr["hour"], timeStr["min"], timeStr["sec"],
-        timestamp["nsec"])
-      kubernetes = {}
-      kubernetes["pod_name"] = record["node_name"]
-      kubernetes["container_name"] = "auditd"
-      kubernetes["namespace_name"] = "kube-system"
-      
-      new_record["time"] = t
-      new_record["log"] = record["log"]
-      new_record["kubernetes"] = kubernetes
-      return 1, timestamp, new_record
-    end
----
-apiVersion: fluentbit.fluent.io
-kind: ClusterOutput
-metadata:
-  name: auditd-to-es
-  labels:
-    fluentbit.fluent.io/enabled: "true"
-    fluentbit.fluent.io/component: logging
-spec:
-  matchRegex: auditd
-  es:
-    host: elasticsearch-master.elastic.svc
-    port: 9200
-    generateID: true
-    logstashPrefix: ks-logstash-log
-    logstashFormat: true
-    timeKey: "@timestamp"
-EOF
-```
-> Before you applying the manifests, please make the former yamls removed.
 
 Within a couple of minutes, you should check the results in ES cluster.
 
@@ -463,7 +470,7 @@ metadata:
 spec:
   matchRegex: (?:kube|service)\.(.*)
   forward:
-    host: fluentd.kubesphere-logging-system.svc
+    host: fluentd.fluent.svc
     port: 24224
 EOF
 ```
@@ -480,7 +487,7 @@ apiVersion: fluentd.fluent.io/v1alpha1
 kind: Fluentd
 metadata:
   name: fluentd
-  namespace: kubesphere-logging-system
+  namespace: fluent
   labels:
     app.kubernetes.io/name: fluentd
 spec:
@@ -535,7 +542,7 @@ apiVersion: fluentd.fluent.io/v1alpha1
 kind: Fluentd
 metadata:
   name: fluentd
-  namespace: kubesphere-logging-system
+  namespace: fluent
   labels:
     app.kubernetes.io/name: fluentd
 spec:
@@ -554,7 +561,7 @@ apiVersion: fluentd.fluent.io/v1alpha1
 kind: FluentdConfig
 metadata:
   name: fluentd-config
-  namespace: kubesphere-logging-system
+  namespace: fluent
   labels:
     config.fluentd.fluent.io/enabled: "true"
 spec:
@@ -567,7 +574,7 @@ apiVersion: fluentd.fluent.io/v1alpha1
 kind: Output
 metadata:
   name: fluentd-output-es
-  namespace: kubesphere-logging-system
+  namespace: fluent
   labels:
     output.fluentd.fluent.io/enabled: "true"
 spec: 
@@ -589,7 +596,7 @@ apiVersion: fluentd.fluent.io/v1alpha1
 kind: Fluentd
 metadata:
   name: fluentd
-  namespace: kubesphere-logging-system
+  namespace: fluent
   labels:
     app.kubernetes.io/name: fluentd
 spec:
@@ -623,7 +630,7 @@ apiVersion: fluentd.fluent.io/v1alpha1
 kind: FluentdConfig
 metadata:
   name: fluentd-config
-  namespace: kubesphere-logging-system
+  namespace: fluent
   labels:
     config.fluentd.fluent.io/enabled: "true"
 spec:
@@ -657,7 +664,7 @@ apiVersion: fluentd.fluent.io/v1alpha1
 kind: Fluentd
 metadata:
   name: fluentd
-  namespace: kubesphere-logging-system
+  namespace: fluent
   labels:
     app.kubernetes.io/name: fluentd
 spec:
@@ -676,7 +683,7 @@ apiVersion: fluentd.fluent.io/v1alpha1
 kind: FluentdConfig
 metadata:
   name: fluentd-config-user1
-  namespace: kubesphere-logging-system
+  namespace: fluent
   labels:
     config.fluentd.fluent.io/enabled: "true"
 spec:
@@ -710,7 +717,7 @@ apiVersion: fluentd.fluent.io/v1alpha1
 kind: Output
 metadata:
   name: fluentd-output-user1
-  namespace: kubesphere-logging-system
+  namespace: fluent
   labels:
     output.fluentd.fluent.io/enabled: "true"
     output.fluentd.fluent.io/user: "user1"
@@ -765,7 +772,7 @@ apiVersion: fluentd.fluent.io/v1alpha1
 kind: Fluentd
 metadata:
   name: fluentd
-  namespace: kubesphere-logging-system
+  namespace: fluent
   labels:
     app.kubernetes.io/name: fluentd
 spec:
@@ -835,7 +842,7 @@ apiVersion: fluentd.fluent.io/v1alpha1
 kind: Fluentd
 metadata:
   name: fluentd
-  namespace: kubesphere-logging-system
+  namespace: fluent
   labels:
     app.kubernetes.io/name: fluentd
 spec:
@@ -890,7 +897,7 @@ apiVersion: fluentd.fluent.io/v1alpha1
 kind: Fluentd
 metadata:
   name: fluentd
-  namespace: kubesphere-logging-system
+  namespace: fluent
   labels:
     app.kubernetes.io/name: fluentd
 spec:
@@ -972,7 +979,7 @@ apiVersion: fluentd.fluent.io/v1alpha1
 kind: Fluentd
 metadata:
   name: fluentd-http
-  namespace: kubesphere-logging-system
+  namespace: fluent
   labels:
     app.kubernetes.io/name: fluentd
 spec:
@@ -991,7 +998,7 @@ apiVersion: fluentd.fluent.io/v1alpha1
 kind: FluentdConfig
 metadata:
   name: fluentd-config
-  namespace: kubesphere-logging-system
+  namespace: fluent
   labels:
     config.fluentd.fluent.io/enabled: "true"
 spec:
@@ -1007,7 +1014,7 @@ apiVersion: fluentd.fluent.io/v1alpha1
 kind: Filter
 metadata:
   name: fluentd-filter
-  namespace: kubesphere-logging-system
+  namespace: fluent
   labels:
     filter.fluentd.fluent.io/enabled: "true"
 spec: 
@@ -1019,7 +1026,7 @@ apiVersion: fluentd.fluent.io/v1alpha1
 kind: Output
 metadata:
   name: fluentd-stdout
-  namespace: kubesphere-logging-system
+  namespace: fluent
   labels:
     output.fluentd.fluent.io/enabled: "true"
 spec: 
@@ -1034,20 +1041,20 @@ Then you can send logs to the endpoint by using curl:
 ```
 curl -X POST -d 'json={"foo":"bar"}' http://<localhost:9880>/app.log
 ```
-> replace the <localhost:9880> to the actual service or endpoint of fluentd, i.e: fluentd-http.kubesphere-logging-system.svc:9880
+> replace the <localhost:9880> to the actual service or endpoint of fluentd, i.e: fluentd-http.fluent.svc:9880
 
 ## How to check the configuration and data
 
 1. See the state of the Fluent Operator:
 
 ```bash
-kubectl get po -n kubesphere-logging-system
+kubectl get po -n fluent
 ```
 
 2. See the generated fluent bit configuration:
 
 ```bash
-kubectl -n kubesphere-logging-system get secrets fluent-bit-config -ojson | jq '.data."fluent-bit.conf"' | awk -F '"' '{printf $2}' | base64 --decode
+kubectl -n fluent get secrets fluent-bit-config -ojson | jq '.data."fluent-bit.conf"' | awk -F '"' '{printf $2}' | base64 --decode
 
 [Service]
     Parsers_File    parsers.conf
@@ -1118,14 +1125,14 @@ kubectl -n kubesphere-logging-system get secrets fluent-bit-config -ojson | jq '
 [Output]
     Name    forward
     Match_Regex    (?:kube|service)\.(.*)
-    Host    fluentd.kubesphere-logging-system.svc
+    Host    fluentd.fluent.svc
     Port    24224
 ```
 
 3. See the generated fluentd configuration:
    
 ```bash
-kubectl -n kubesphere-logging-system get secrets fluentd-config -ojson | jq '.data."app.conf"' | awk -F '"' '{printf $2}' | base64 --decode 
+kubectl -n fluent get secrets fluentd-config -ojson | jq '.data."app.conf"' | awk -F '"' '{printf $2}' | base64 --decode 
 ---
 <source>
   @type  forward

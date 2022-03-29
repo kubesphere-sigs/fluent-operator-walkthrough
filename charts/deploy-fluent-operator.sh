@@ -2,7 +2,7 @@
 set -eu
 # Simple script to deploy Fluent Operator to a Kubernetes cluster with context already set
 
-LOGGING_NAMESPACE=${LOGGING_NAMESPACE:-kubesphere-logging-system}
+LOGGING_NAMESPACE=${LOGGING_NAMESPACE:-fluent}
 SET_FLAGS=""
 
 ELASTIC_SERVICE="elasticsearch-master.elastic.svc"

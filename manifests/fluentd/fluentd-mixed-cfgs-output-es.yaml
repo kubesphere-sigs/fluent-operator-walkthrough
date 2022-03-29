@@ -2,7 +2,7 @@ apiVersion: fluentd.fluent.io/v1alpha1
 kind: Fluentd
 metadata:
   name: fluentd
-  namespace: kubesphere-logging-system
+  namespace: fluent
   labels:
     app.kubernetes.io/name: fluentd
 spec:
@@ -36,7 +36,7 @@ apiVersion: fluentd.fluent.io/v1alpha1
 kind: FluentdConfig
 metadata:
   name: fluentd-config
-  namespace: kubesphere-logging-system
+  namespace: fluent
   labels:
     config.fluentd.fluent.io/enabled: "true"
 spec:
@@ -54,7 +54,7 @@ metadata:
 spec: 
   outputs: 
   - elasticsearch:
-      host: elasticsearch-logging-data.kubesphere-logging-system.svc
+      host: elasticsearch-logging-data.fluent.svc
       port: 9200
       logstashFormat: true
       logstashPrefix: ks-logstash-log

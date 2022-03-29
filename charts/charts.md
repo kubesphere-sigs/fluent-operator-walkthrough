@@ -96,7 +96,7 @@ helm upgrade --install --namespace="$ES_NAMESPACE" --create-namespace --wait ela
 Release "fluent-operator" does not exist. Installing it now.
 NAME: fluent-operator
 LAST DEPLOYED: Tue Mar 22 21:22:53 2022
-NAMESPACE: kubesphere-logging-system
+NAMESPACE: fluent
 STATUS: deployed
 REVISION: 1
 TEST SUITE: None
@@ -105,8 +105,8 @@ Thank you for installing  fluent-operator
 Your release is named    fluent-operator
 
 To learn more about the release ,try:
-   $ helm status  fluent-operator  -n  kubesphere-logging-system
-   $ helm get  fluent-operator  -n kubesphere-logging-system
+   $ helm status  fluent-operator  -n  fluent
+   $ helm get  fluent-operator  -n fluent
 
 deployment.apps/fluent-operator condition met
 Please visit https://github.com/fluent/fluent-operator/tree/master/manifests/fluentd to apply the manifests that you want to explore.
@@ -115,14 +115,14 @@ Please visit https://github.com/fluent/fluent-operator/tree/master/manifests/flu
 2. See the state of the Fluent Operator:
 
 ```bash
-# kubectl get po -n kubesphere-logging-system
-# kubectl -n kubesphere-logging-system get clusterfluentbitconfigs.fluentbit.fluent.io 
+# kubectl get po -n fluent
+# kubectl -n fluent get clusterfluentbitconfigs.fluentbit.fluent.io 
 ```
 
 3. See the generated fluent bit configuration:
 
 ```
-# kubectl -n kubesphere-logging-system get secrets fluent-bit-config -ojson | jq '.data."fluent-bit.conf"' | awk -F '"' '{printf $2}' | base64 --decode
+# kubectl -n fluent get secrets fluent-bit-config -ojson | jq '.data."fluent-bit.conf"' | awk -F '"' '{printf $2}' | base64 --decode
 [Service]
     Parsers_File    parsers.conf
 [Input]
@@ -226,7 +226,7 @@ Please visit https://github.com/fluent/fluent-operator/tree/master/manifests/flu
 Release "fluent-operator" does not exist. Installing it now.
 NAME: fluent-operator
 LAST DEPLOYED: Tue Mar 22 21:22:53 2022
-NAMESPACE: kubesphere-logging-system
+NAMESPACE: fluent
 STATUS: deployed
 REVISION: 1
 TEST SUITE: None
@@ -235,8 +235,8 @@ Thank you for installing  fluent-operator
 Your release is named    fluent-operator
 
 To learn more about the release ,try:
-   $ helm status  fluent-operator  -n  kubesphere-logging-system
-   $ helm get  fluent-operator  -n kubesphere-logging-system
+   $ helm status  fluent-operator  -n  fluent
+   $ helm get  fluent-operator  -n fluent
 
 deployment.apps/fluent-operator condition met
 Please visit https://github.com/fluent/fluent-operator/tree/master/manifests/fluentd to apply the manifests that you want to explore.
@@ -245,14 +245,14 @@ Please visit https://github.com/fluent/fluent-operator/tree/master/manifests/flu
 2. See the state of the Fluent Operator:
 
 ```bash
-# kubectl get po -n kubesphere-logging-system
-# kubectl -n kubesphere-logging-system get clusterfluentbitconfigs.fluentbit.fluent.io 
+# kubectl get po -n fluent
+# kubectl -n fluent get clusterfluentbitconfigs.fluentbit.fluent.io 
 ```
 
 3. See the generated fluent bit configuration:
 
 ```bash
-# kubectl -n kubesphere-logging-system get secrets fluent-bit-config -ojson | jq '.data."fluent-bit.conf"' | awk -F '"' '{printf $2}' | base64 --decode
+# kubectl -n fluent get secrets fluent-bit-config -ojson | jq '.data."fluent-bit.conf"' | awk -F '"' '{printf $2}' | base64 --decode
 [Service]
     Parsers_File    parsers.conf
 [Input]
@@ -322,14 +322,14 @@ Please visit https://github.com/fluent/fluent-operator/tree/master/manifests/flu
 [Output]
     Name    forward
     Match_Regex    (?:kube|service)\.(.*)
-    Host    fluentd.kubesphere-logging-system.svc
+    Host    fluentd.fluent.svc
     Port    24224
 ```
 
 4. See the generated fluentd configuration:
    
 ```bash
-# kubectl -n kubesphere-logging-system get secrets fluentd-config -ojson | jq '.data."app.conf"' | awk -F '"' '{printf $2}' | base64 --decode 
+# kubectl -n fluent get secrets fluentd-config -ojson | jq '.data."app.conf"' | awk -F '"' '{printf $2}' | base64 --decode 
 ---
 <source>
   @type  forward

@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: fluent-bit-auditd-config
-  namespace: kubesphere-logging-system
+  namespace: fluent
 data:
   auditd.lua: |
     function cb_replace(tag, timestamp, record)
