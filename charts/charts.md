@@ -195,7 +195,7 @@ Please visit https://github.com/fluent/fluent-operator/tree/master/manifests/flu
     Host    elasticsearch-master.elastic.svc
     Port    9200
     Logstash_Format    true
-    Logstash_Prefix    ks-logstash-log
+    Logstash_Prefix    fluent-log
     Time_Key    @timestamp
     Generate_ID    true
 [Output]
@@ -360,7 +360,7 @@ Please visit https://github.com/fluent/fluent-operator/tree/master/manifests/flu
     @type  elasticsearch
     host  elasticsearch-master.elastic.svc
     logstash_format  true
-    logstash_prefix  ks-logstash-log
+    logstash_prefix  fluent-log
     port  9200
   </match>
   <match **>

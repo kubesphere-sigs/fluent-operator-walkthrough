@@ -11,6 +11,6 @@ spec:
     host: elasticsearch-master.elastic.svc
     port: 9200
     generateID: true
-    logstashPrefix: ks-logstash-log
+    logstashPrefix: fluent-log
     logstashFormat: true
     timeKey: "@timestamp"
