@@ -1,11 +1,8 @@
 # fluent-operator-walkthrough
 
 - [fluent-operator-walkthrough](#fluent-operator-walkthrough)
-  - [Create Kind Cluster](#create-kind-cluster)
-  - [Startup Log sinks](#startup-log-sinks)
-    - [Startup Kafka Cluster](#startup-kafka-cluster)
-    - [Startup ES Cluster](#startup-es-cluster)
-  - [Install Fluent Operator (Operator only)](#install-fluent-operator-operator-only)
+  - [Prerequisite](#Prerequisite)
+  - [Install Fluent Operator](#install-fluent-operator)
   - [Deploy Fluent Bit or Fluentd](#deploy-fluent-bit-or-fluentd)
     - [Create Fluent Bit Daemonset using FluentBit CRD](#create-fluent-bit-daemonset-using-fluentbit-crd)
     - [Create Fluentd Statefulset using Fluentd CRD](#create-fluentd-statefulset-using-fluentd-crd)
@@ -24,27 +21,30 @@
     - [Use fluentd to receive logs from HTTP and send to stdout](#use-fluentd-to-receive-logs-from-http-and-send-to-stdout)
   - [How to check the configuration and data](#how-to-check-the-configuration-and-data)
 
-## Create Kind Cluster
+## Prerequisite
 
-Following the script "create-kind-cluster.sh" to create a kind cluster named kubesphere，you can change the cluster name as what you wanted.
+To get some hands-on experience on the Fluent Operator, you'll need a Kind cluster. You also need to set up a Kafka cluster and an Elasticsearch cluster in this Kind cluster.
 
-## Startup Log sinks
+```shell
+# Setup a Kind cluster named fluent
+./create-kind-cluster.sh
 
-### Startup Kafka Cluster
+# Setup a Kafka cluster in the kafka namespace
+./deploy-kafka.sh
 
-Following the script "deploy-kafka.sh" to deploy a kafka cluster.
+# Setup an Elasticsearch cluster in the elastic namespace
+./deploy-es.sh
+```
 
-### Startup ES Cluster
+## Install Fluent Operator
 
-Following the script "deploy-es.sh" to deploy a es cluster.
+Fluent Operator controls the lifecycle of the Fluent Bit and Fluentd. You can use the following script to launch the Fluent Operator in the `fluent` namespace:
 
-## Install Fluent Operator (Operator only)
+```shell
+./deploy-fluent-operator.sh
+```
 
-Following the script "deploy-fluent-operator-raw.sh" to deploy a raw Fluent Operator deployment.
-
-The Fluent Operator works through the defined CRDs. The orchestration engine can start Fluent Bit instances or Fluentd instances and use Secret Object to mount configuration files on which the instances run.
-
-You can find a detailed introduction to CRD at the link below:
+You can find more details of the Fluent Bit and Fluentd CRDs in the links below:
 
 - https://github.com/fluent/fluent-operator#fluent-bit
 - https://github.com/fluent/fluent-operator#fluentd
@@ -511,7 +511,7 @@ metadata:
 spec:
   watchedNamespaces: 
   - kube-system
-  - kubesphere-monitoring-system
+  - default
   clusterOutputSelector:
     matchLabels:
       output.fluentd.fluent.io/enabled: "true"
@@ -620,7 +620,7 @@ metadata:
 spec:
   watchedNamespaces: 
   - kube-system
-  - kubesphere-monitoring-system
+  - default
   clusterOutputSelector:
     matchLabels:
       output.fluentd.fluent.io/enabled: "true"
@@ -796,7 +796,7 @@ metadata:
 spec:
   watchedNamespaces: 
   - kube-system
-  - kubesphere-monitoring-system
+  - default
   clusterFilterSelector:
     matchLabels:
       filter.fluentd.fluent.io/enabled: "true"
@@ -866,7 +866,7 @@ metadata:
 spec:
   watchedNamespaces: 
   - kube-system
-  - kubesphere-monitoring-system
+  - default
   clusterOutputSelector:
     matchLabels:
       output.fluentd.fluent.io/enabled: "true"
@@ -921,7 +921,7 @@ metadata:
 spec:
   watchedNamespaces: 
   - kube-system
-  - kubesphere-monitoring-system
+  - default
   clusterFilterSelector:
     matchLabels:
       filter.fluentd.fluent.io/enabled: "true"
@@ -1145,7 +1145,7 @@ kubectl -n fluent get secrets fluentd-config -ojson | jq '.data."app.conf"' | aw
   <route>
     @label  @48b7cb809bc2361ba336802a95eca0d4
     <match>
-      namespaces  kube-system,kubesphere-monitoring-system
+      namespaces  kube-system,default
     </match>
   </route>
 </match>

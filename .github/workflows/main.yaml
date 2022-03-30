@@ -20,7 +20,7 @@ jobs:
         severity: error
 
   es:
-    name: Test ES Installation
+    name: Test Elasticsearch Installation
     runs-on: ubuntu-18.04
     steps:
     - name: Install Helm
@@ -35,14 +35,14 @@ jobs:
     
     - name: Create Cluster
       run: |
-        chmod +x create-kind-cluster.sh && ./create-kind-cluster.sh
+        chmod +x ./create-kind-cluster.sh && ./create-kind-cluster.sh
     
     - name: Test ES Installation
       run: |
         chmod +x ./deploy-es.sh && bash ./deploy-es.sh
 
   kafka:
-    name: Test KAFKA Installation
+    name: Test Kafka Installation
     runs-on: ubuntu-18.04
     steps:
     - name: Install Helm
@@ -57,14 +57,14 @@ jobs:
 
     - name: Create Cluster
       run: |
-        chmod +x create-kind-cluster.sh && ./create-kind-cluster.sh
+        chmod +x ./create-kind-cluster.sh && ./create-kind-cluster.sh
     
     - name: Test KAFKA Installation
       run: |
         chmod +x ./deploy-kafka.sh && bash ./deploy-kafka.sh
 
   fluent-operator:
-    name: Test Fluent Operator
+    name: Test Fluent Operator installation
     runs-on: ubuntu-18.04
     steps:
     - name: Checkout
@@ -74,8 +74,8 @@ jobs:
 
     - name: Create Cluster
       run: |
-        chmod +x create-kind-cluster.sh && ./create-kind-cluster.sh
+        chmod +x ./create-kind-cluster.sh && ./create-kind-cluster.sh
     
     - name: Test Fluent Operator
       run: |
-        chmod +x ./deploy-fluent-operator-raw.sh && bash ./deploy-fluent-operator-raw.sh
+        chmod +x ./deploy-fluent-operator.sh && bash ./deploy-fluent-operator.sh
