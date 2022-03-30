@@ -66,7 +66,7 @@ spec:
       host: elasticsearch-logging-data.fluent.svc
       port: 9200
       logstashFormat: true
-      logstashPrefix: ks-logstash-log
+      logstashPrefix: fluent-log
     buffer:
       type: file
       path: /buffers/es.log
