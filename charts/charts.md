@@ -12,13 +12,13 @@
 
 ## Create Kind Cluster
 
-Following the script "create-kind-cluster.sh" to create a kind cluster named kubesphere，you can change the cluster name as what you wanted:
+Following the script "create-kind-cluster.sh" to create a kind cluster named fluent，you can change the cluster name as what you wanted:
 
 ```bash
 #!/bin/bash
 set -eu
 
-CLUSTER_NAME=${CLUSTER_NAME:-kubesphere}
+CLUSTER_NAME=${CLUSTER_NAME:-fluent}
 
 if [[ "${INSTALL_KIND:-no}" == "yes" ]]; then
     rm -f ./kind
@@ -44,7 +44,7 @@ Following the script "deploy-kafka.sh" to deploy a kafka cluster:
 set -eu
 
 KAFKA_NAMESPACE=${KAFKA_NAMESPACE:-kafka}
-CLUSTER_NAME=${CLUSTER_NAME:-kubesphere}
+CLUSTER_NAME=${CLUSTER_NAME:-fluent}
 
 if [[ "${INSTALL_HELM:-no}" == "yes" ]]; then
     # See https://helm.sh/docs/intro/install/
@@ -53,8 +53,8 @@ fi
 
 # docker pull quay.io/strimzi/kafka:0.28.0-kafka-3.1.0
 # docker pull quay.io/strimzi/operator:0.28.0
-# kind load docker-image quay.io/strimzi/kafka:0.28.0-kafka-3.1.0 --name kubesphere
-# kind load docker-image quay.io/strimzi/operator:0.28.0 --name kubesphere
+# kind load docker-image quay.io/strimzi/kafka:0.28.0-kafka-3.1.0 --name fluent
+# kind load docker-image quay.io/strimzi/operator:0.28.0 --name fluent
 
 kubectl create ns $KAFKA_NAMESPACE
 kubectl create -f 'https://strimzi.io/install/latest?namespace=kafka' -n $KAFKA_NAMESPACE
@@ -342,7 +342,7 @@ Please visit https://github.com/fluent/fluent-operator/tree/master/manifests/flu
   <route>
     @label  @48b7cb809bc2361ba336802a95eca0d4
     <match>
-      namespaces  kube-system,kubesphere-monitoring-system
+      namespaces  kube-system,default
     </match>
   </route>
 </match>

@@ -4,7 +4,7 @@ set -eu
 # Simple script to provision a Kubernetes cluster using KIND: https://kind.sigs.k8s.io/
 
 # Override with a different name if you want
-CLUSTER_NAME=${CLUSTER_NAME:-kubesphere}
+CLUSTER_NAME=${CLUSTER_NAME:-fluent}
 
 if [[ "${INSTALL_KIND:-no}" == "yes" ]]; then
     rm -f ./kind
