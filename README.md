@@ -244,6 +244,17 @@ spec:
 EOF
 ```
 
+You'll see the FluentBit DaemonSet up and running with other CRs:
+
+```shell
+kubectl -n fluent get daemonset
+kubectl -n fluent get fluentbit
+kubectl -n fluent get clusterfluentbitconfig
+kubectl -n fluent get clusterinput.fluentbit.fluent.io
+kubectl -n fluent get clusterfilter.fluentbit.fluent.io
+kubectl -n fluent get clusteroutput.fluentbit.fluent.io
+```
+
 Within a couple of minutes, you can double check the results in the Elasticsearch cluster.
 
 > To double check the output, please refer to [this guide](#how-to-check-the-configuration-and-data).
@@ -363,6 +374,17 @@ spec:
 EOF
 ```
 
+You'll see the FluentBit DaemonSet up and running with other CRs:
+
+```shell
+kubectl -n fluent get daemonset
+kubectl -n fluent get fluentbit
+kubectl -n fluent get clusterfluentbitconfig
+kubectl -n fluent get clusterinput.fluentbit.fluent.io
+kubectl -n fluent get clusterfilter.fluentbit.fluent.io
+kubectl -n fluent get clusteroutput.fluentbit.fluent.io
+```
+
 Within a couple of minutes, you can double check the output in the Kafka cluster.
 
 > To double check the output, please refer to [this guide](#how-to-check-the-configuration-and-data).
@@ -455,6 +477,15 @@ spec:
 EOF
 ```
 
+You'll see the Fluentd StatefulSet up and running with other CRs:
+
+```shell
+kubectl -n fluent get statefulset
+kubectl -n fluent get fluentd
+kubectl -n fluent get clusterfluentdconfig.fluentd.fluent.io
+kubectl -n fluent get clusteroutput.fluentd.fluent.io
+```
+
 ### FluentdConfig: Fluentd namespaced-wide configuration
 
 You can send logs Fluentd received from Fluent Bit to a namespace-wide sink defined by a `Output`.
@@ -491,6 +522,13 @@ spec:
       logstashFormat: true
       logstashPrefix: fluent-log-namespace-fd
 EOF
+```
+
+You'll see the Fluentd CRs created:
+
+```shell
+kubectl -n fluent get fluentdconfig
+kubectl -n fluent get output.fluentd.fluent.io
 ```
 
 ### Use cluster-wide and namespaced-wide FluentdConfig together
@@ -544,6 +582,14 @@ spec:
       logstashFormat: true
       logstashPrefix: fluent-log-hybrid-fd
 EOF
+```
+
+You'll see the Fluentd CRs created:
+
+```shell
+kubectl -n fluent get clusterfluentdconfig
+kubectl -n fluent get fluentdconfig
+kubectl -n fluent get clusteroutput.fluentd.fluent.io
 ```
 
 ### Use cluster-wide and namespaced-wide FluentdConfig together in multi-tenant scenarios
@@ -630,6 +676,15 @@ spec:
 EOF
 ```
 
+You'll see the Fluentd CRs created:
+
+```shell
+kubectl -n fluent get clusterfluentdconfig
+kubectl -n fluent get fluentdconfig
+kubectl -n fluent get output.fluentd.fluent.io
+kubectl -n fluent get clusteroutput.fluentd.fluent.io
+```
+
 ### Route logs to different Kafka topics based on namespace
 
 You can use Fluentd filter to distribute logs to different topics based on namespace.
@@ -684,6 +739,14 @@ spec:
       useEventTime: true
       topicKey: kubernetes_ns
 EOF
+```
+
+You'll see the Fluentd CRs created:
+
+```shell
+kubectl -n fluent get clusterfluentdconfig
+kubectl -n fluent get clusterfilter.fluentd.fluent.io
+kubectl -n fluent get clusteroutput.fluentd.fluent.io
 ```
 
 ### Using buffer for Fluentd output
@@ -748,6 +811,14 @@ spec:
       type: file
       path: /buffers/es.log
 EOF
+```
+
+You'll see the Fluentd CRs created:
+
+```shell
+kubectl -n fluent get clusterfluentdconfig
+kubectl -n fluent get clusterfilter.fluentd.fluent.io
+kubectl -n fluent get clusteroutput.fluentd.fluent.io
 ```
 
 ## Fluentd only mode
@@ -820,6 +891,15 @@ spec:
   outputs: 
     - stdout: {}
 EOF
+```
+
+You'll see the Fluentd CRs created:
+
+```shell
+kubectl -n fluent get fluentd
+kubectl -n fluent get fluentdconfig
+kubectl -n fluent get filter.fluentd.fluent.io
+kubectl -n fluent get output.fluentd.fluent.io
 ```
 
 Then you can send logs to the endpoint by using curl:
