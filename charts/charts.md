@@ -1,6 +1,6 @@
-# fluent-operator-devtools
+# fluent-operator-walkthrough
 
-- [fluent-operator-devtools](#fluent-operator-devtools)
+- [fluent-operator-walkthrough](#fluent-operator-walkthrough)
   - [Create Kind Cluster](#create-kind-cluster)
   - [Startup Storage](#startup-storage)
     - [Startup Kafka Cluster](#startup-kafka-cluster)
@@ -202,7 +202,7 @@ Please visit https://github.com/fluent/fluent-operator/tree/master/manifests/flu
     Name    kafka
     Match_Regex    (?:kube|service)\.(.*)
     Brokers    my-cluster-kafka-bootstrap.kafka.svc:9091,my-cluster-kafka-bootstrap.kafka.svc:9092,my-cluster-kafka-bootstrap.kafka.svc:9093
-    Topics    ks-log
+    Topics    fluent-log
 ```
 
 4. Check the elastic cluster index counts:
@@ -213,7 +213,7 @@ Please visit https://github.com/fluent/fluent-operator/tree/master/manifests/flu
 
 5. Check the kafka cluster:
 ```
-# kubectl -n kafka exec -it my-cluster-kafka-0 -- bin/kafka-console-consumer.sh --bootstrap-server my-cluster-kafka-bootstrap:9092 --topic ks-log
+# kubectl -n kafka exec -it my-cluster-kafka-0 -- bin/kafka-console-consumer.sh --bootstrap-server my-cluster-kafka-bootstrap:9092 --topic fluent-log
 ```
 
 ### Fluentd Log Pipleline
@@ -379,7 +379,7 @@ Please visit https://github.com/fluent/fluent-operator/tree/master/manifests/flu
 5. Query the elastic cluster kubernetes_ns buckets:
 
 ```bash
-# kubectl -n elastic exec -it elasticsearch-master-0 -c elasticsearch --  curl -X GET "localhost:9200/ks-logstash*/_search?pretty" -H 'Content-Type: application/json' -d '{                                                           
+# kubectl -n elastic exec -it elasticsearch-master-0 -c elasticsearch --  curl -X GET "localhost:9200/fluent-log*/_search?pretty" -H 'Content-Type: application/json' -d '{                                                           
    "size" : 0,
    "aggs" : {
       "kubernetes_ns": {
@@ -394,7 +394,7 @@ Please visit https://github.com/fluent/fluent-operator/tree/master/manifests/flu
 6. Check the kafka cluster:
    
 ```bash
-# kubectl -n kafka exec -it my-cluster-kafka-0 -- bin/kafka-console-consumer.sh --bootstrap-server my-cluster-kafka-bootstrap:9092 --topic ks-log
+# kubectl -n kafka exec -it my-cluster-kafka-0 -- bin/kafka-console-consumer.sh --bootstrap-server my-cluster-kafka-bootstrap:9092 --topic fluent-log
 ```
 
 ### Multi-tenant Scenario Solution
