@@ -57,9 +57,11 @@ You can find more details of the Fluent Bit and Fluentd CRDs in the links below:
 Both Fluent Bit and Fluentd are defined as CRDs in Fluent Operator, you can create the Fluent Bit DaemonSet or the Fluentd StatefulSet by declaring FluentBit or Fluentd CR.
 
 ### Deploy Fluent Bit
+
+The `FluentBit` CR works together with `ClusterFluentBitConfig` and they should be created together.
+The following `FluentBit` CR is just an example. To deply the actually Fluent Bit DaemonSet, please refer to the [Using Fluent Bit to collect kubelet logs and output to Elasticsearch](#using-fluent-bit-to-collect-kubelet-logs-and-output-to-elasticsearch) and [Using Fluent Bit to collect K8s application logs and output to Kafka](#using-fluent-bit-to-collect-k8s-application-logs-and-output-to-kafka) sections.
   
-```shell
-cat <<EOF | kubectl apply -f -
+```yaml
 apiVersion: fluentbit.fluent.io/v1alpha2
 kind: FluentBit
 metadata:
@@ -82,7 +84,6 @@ spec:
   fluentBitConfigName: fluent-bit-only-config
   tolerations:
     - operator: Exists
-EOF
 ```
 
 ### Deploy Fluentd
@@ -119,6 +120,29 @@ Fluent Bit is light-weighed, you can only use Fluent Bit to process logs.
 
 ```shell
 cat <<EOF | kubectl apply -f -
+apiVersion: fluentbit.fluent.io/v1alpha2
+kind: FluentBit
+metadata:
+  name: fluent-bit
+  namespace: fluent
+  labels:
+    app.kubernetes.io/name: fluent-bit
+spec:
+  image: kubesphere/fluent-bit:v1.8.11
+  positionDB:
+    hostPath:
+      path: /var/lib/fluent-bit/
+  resources:
+    requests:
+      cpu: 10m
+      memory: 25Mi
+    limits:
+      cpu: 500m
+      memory: 200Mi
+  fluentBitConfigName: fluent-bit-only-config
+  tolerations:
+    - operator: Exists
+---
 apiVersion: fluentbit.fluent.io/v1alpha2
 kind: ClusterFluentBitConfig
 metadata:
