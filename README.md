@@ -79,7 +79,7 @@ spec:
     limits:
       cpu: 500m
       memory: 200Mi
-  fluentBitConfigName: fluent-bit-config
+  fluentBitConfigName: fluent-bit-only-config
   tolerations:
     - operator: Exists
 EOF
@@ -228,6 +228,29 @@ Within a couple of minutes, you can double check the results in the Elasticsearc
 
 ```shell
 cat <<EOF | kubectl apply -f -
+apiVersion: fluentbit.fluent.io/v1alpha2
+kind: FluentBit
+metadata:
+  name: fluent-bit
+  namespace: fluent
+  labels:
+    app.kubernetes.io/name: fluent-bit
+spec:
+  image: kubesphere/fluent-bit:v1.8.11
+  positionDB:
+    hostPath:
+      path: /var/lib/fluent-bit/
+  resources:
+    requests:
+      cpu: 10m
+      memory: 25Mi
+    limits:
+      cpu: 500m
+      memory: 200Mi
+  fluentBitConfigName: fluent-bit-config
+  tolerations:
+    - operator: Exists
+---
 apiVersion: fluentbit.fluent.io/v1alpha2
 kind: ClusterFluentBitConfig
 metadata:
