@@ -1,0 +1,11 @@
+apiVersion: fluentd.fluent.io/v1alpha1
+kind: Filter
+metadata:
+  name: fluentd-only-filter
+  namespace: fluent
+  labels:
+    filter.fluentd.fluent.io/mode: "fluentd-only"
+    filter.fluentd.fluent.io/enabled: "true"
+spec:
+  filters:
+    - stdout: {}

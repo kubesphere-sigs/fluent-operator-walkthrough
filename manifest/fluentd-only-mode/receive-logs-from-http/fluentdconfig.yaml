@@ -1,0 +1,17 @@
+apiVersion: fluentd.fluent.io/v1alpha1
+kind: FluentdConfig
+metadata:
+  name: fluentd-only-config
+  namespace: fluent
+  labels:
+    config.fluentd.fluent.io/enabled: "true"
+    config.fluentd.fluent.io/mode: "fluentd-only"
+spec:
+  filterSelector:
+    matchLabels:
+      filter.fluentd.fluent.io/mode: "fluentd-only"
+      filter.fluentd.fluent.io/enabled: "true"
+  outputSelector:
+    matchLabels:
+      output.fluentd.fluent.io/mode: "fluentd-only"
+      output.fluentd.fluent.io/enabled: "true"

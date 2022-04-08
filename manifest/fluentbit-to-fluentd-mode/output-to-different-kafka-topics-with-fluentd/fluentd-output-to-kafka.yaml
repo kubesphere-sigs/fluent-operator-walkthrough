@@ -1,0 +1,13 @@
+apiVersion: fluentd.fluent.io/v1alpha1
+kind: ClusterOutput
+metadata:
+  name: cluster-fluentd-output-kafka
+  labels:
+    output.fluentd.fluent.io/type: "kafka"
+    output.fluentd.fluent.io/enabled: "true"
+spec:
+  outputs:
+  - kafka:
+      brokers: my-cluster-kafka-bootstrap.default.svc:9091,my-cluster-kafka-bootstrap.default.svc:9092,my-cluster-kafka-bootstrap.default.svc:9093
+      useEventTime: true
+      topicKey: kubernetes_ns

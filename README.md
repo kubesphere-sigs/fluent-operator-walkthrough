@@ -364,7 +364,7 @@ kind: ClusterOutput
 metadata:
   name: kafka
   labels:
-    fluentbit.fluent.io/enabled: "false"
+    fluentbit.fluent.io/enabled: "true"
     fluentbit.fluent.io/mode: "k8s"
 spec:
   matchRegex: (?:kube|service)\.(.*)
@@ -534,7 +534,7 @@ kubectl -n fluent get output.fluentd.fluent.io
 ### Use cluster-wide and namespaced-wide FluentdConfig together
 
 You can use `FluentdConfig` and `ClusterFluentdConfig` together like below.
-The `FluentdConfig` will send log of the `Fluent` namespace to the `ClusterOutput`
+The `FluentdConfig` will send log of the `fluent` namespace to the `ClusterOutput`
 The `ClusterFluentdConfig` will send log of the global `watchedNamespaces` to the `ClusterOutput`
 
 ```shell
@@ -862,8 +862,8 @@ spec:
       filter.fluentd.fluent.io/enabled: "true"
   outputSelector:
     matchLabels:
-      output.fluentd.fluent.io/mode: "true"
       output.fluentd.fluent.io/enabled: "true"
+      output.fluentd.fluent.io/mode: "fluentd-only"
 
 ---
 apiVersion: fluentd.fluent.io/v1alpha1
@@ -886,7 +886,7 @@ metadata:
   namespace: fluent
   labels:
     output.fluentd.fluent.io/enabled: "true"
-    output.fluentd.fluent.io/enabled: "true"
+    output.fluentd.fluent.io/mode: "fluentd-only"
 spec: 
   outputs: 
     - stdout: {}
