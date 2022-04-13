@@ -1,0 +1,18 @@
+apiVersion: fluentd.fluent.io/v1alpha1
+kind: Fluentd
+metadata:
+  name: fluentd-http
+  namespace: fluent
+  labels:
+    app.kubernetes.io/name: fluentd
+spec:
+  globalInputs:
+    - http:
+        bind: 0.0.0.0
+        port: 9880
+  replicas: 1
+  image: kubesphere/fluentd:v1.14.4
+  fluentdCfgSelector:
+    matchLabels:
+      config.fluentd.fluent.io/enabled: "true"
+      config.fluentd.fluent.io/mode: "fluentd-only"

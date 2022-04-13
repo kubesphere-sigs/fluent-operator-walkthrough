@@ -1,0 +1,19 @@
+apiVersion: fluentd.fluent.io/v1alpha1
+kind: ClusterFluentdConfig
+metadata:
+  name: cluster-fluentd-config-buffer
+  labels:
+    config.fluentd.fluent.io/enabled: "true"
+    config.fluentd.fluent.io/mode: "buffer"
+spec:
+  watchedNamespaces:
+  - kube-system
+  - default
+  clusterFilterSelector:
+    matchLabels:
+      filter.fluentd.fluent.io/type: "buffer"
+      filter.fluentd.fluent.io/enabled: "true"
+  clusterOutputSelector:
+    matchLabels:
+      output.fluentd.fluent.io/type: "buffer"
+      output.fluentd.fluent.io/enabled: "true"
