@@ -26,11 +26,13 @@
 <!-- /TOC -->
 ## Prerequisite
 
-To get some hands-on experience on the Fluent Operator, you'll need a Kind cluster. You also need to set up a Kafka cluster and an Elasticsearch cluster in this Kind cluster.
+To get some hands-on experience on the Fluent Operator, you'll need a minikube cluster. You also need to set up a Kafka cluster and an Elasticsearch cluster in this Kind cluster.
 
 ```shell
-# Setup a minikube cluster
+# Setup a minikube cluster on the linux
 ./create-minikube-cluster.sh
+# Setup a minikube cluster on the mac
+./create-minikube-cluster-for-mac.sh
 
 # Setup a Kafka cluster in the kafka namespace
 ./deploy-kafka.sh
@@ -38,6 +40,11 @@ To get some hands-on experience on the Fluent Operator, you'll need a Kind clust
 # Setup an Elasticsearch cluster in the elastic namespace
 ./deploy-es.sh
 ```
+>Note:
+> If you fail in mac execution, you may have to remove the old minikube links and link the newly installed binary:
+> <br>brew unlink minikube<br>
+> <br>brew link minikube<br>
+> Reference: https://minikube.sigs.k8s.io/docs/start/
 
 ## Install Fluent Operator
 

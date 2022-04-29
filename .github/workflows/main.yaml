@@ -9,16 +9,6 @@ on:
       - master
 
 jobs:
-  shellcheck:
-    name: Shellcheck
-    runs-on: ubuntu-18.04
-    steps:
-    - uses: actions/checkout@v2
-    - name: Run ShellCheck
-      uses: ludeeus/action-shellcheck@master
-      with:
-        severity: error
-
   es:
     name: Test Elasticsearch Installation
     runs-on: ubuntu-18.04
