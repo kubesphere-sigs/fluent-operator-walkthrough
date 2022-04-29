@@ -35,7 +35,7 @@ jobs:
     
     - name: Create Cluster
       run: |
-        chmod +x ./create-kind-cluster.sh && ./create-kind-cluster.sh
+        chmod +x ./create-minikube-cluster.sh && ./create-minikube-cluster.sh
     
     - name: Test ES Installation
       run: |
@@ -57,7 +57,7 @@ jobs:
 
     - name: Create Cluster
       run: |
-        chmod +x ./create-kind-cluster.sh && ./create-kind-cluster.sh
+        chmod +x ./create-minikube-cluster.sh && ./create-minikube-cluster.sh
     
     - name: Test KAFKA Installation
       run: |
@@ -74,7 +74,7 @@ jobs:
 
     - name: Create Cluster
       run: |
-        chmod +x ./create-kind-cluster.sh && ./create-kind-cluster.sh
+        chmod +x ./create-minikube-cluster.sh && ./create-minikube-cluster.sh
     
     - name: Test Fluent Operator
       run: |
