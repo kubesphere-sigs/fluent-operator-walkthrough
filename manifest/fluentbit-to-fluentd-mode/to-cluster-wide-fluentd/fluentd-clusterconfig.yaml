@@ -11,5 +11,5 @@ spec:
   - default
   clusterOutputSelector:
     matchLabels:
-    output.fluentd.fluent.io/scope: "cluster"
-    output.fluentd.fluent.io/enabled: "true"
+      output.fluentd.fluent.io/scope: "cluster"
+      output.fluentd.fluent.io/enabled: "true"

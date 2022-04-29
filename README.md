@@ -29,8 +29,8 @@
 To get some hands-on experience on the Fluent Operator, you'll need a Kind cluster. You also need to set up a Kafka cluster and an Elasticsearch cluster in this Kind cluster.
 
 ```shell
-# Setup a Kind cluster named fluent
-./create-kind-cluster.sh
+# Setup a minikube cluster
+./create-minikube-cluster.sh
 
 # Setup a Kafka cluster in the kafka namespace
 ./deploy-kafka.sh
