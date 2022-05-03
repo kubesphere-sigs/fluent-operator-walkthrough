@@ -326,6 +326,8 @@ spec:
   tail:
     tag: kube.*
     path: /var/log/containers/*.log
+    # Exclude logs from util pod
+    excludePath: /var/log/containers/utils_default_utils-*.log
     parser: docker
     refreshIntervalSeconds: 10
     memBufLimit: 5MB
@@ -413,7 +415,7 @@ metadata:
   name: fluentd
   labels:
     fluentbit.fluent.io/enabled: "true"
-    fluentbit.fluent.io/component: logging
+    fluentbit.fluent.io/mode: "k8s"
 spec:
   matchRegex: (?:kube|service)\.(.*)
   forward:
@@ -1073,9 +1075,6 @@ kubectl -n elastic exec -it elasticsearch-master-0 -c elasticsearch --  curl -X 
 
 ```bash
 kubectl -n elastic exec -it elasticsearch-master-0 -c elasticsearch -- curl 'localhost:9200/_cat/indices?v'
-health status index                         uuid                   pri rep docs.count docs.deleted store.size pri.store.size
-green  open   .geoip_databases              j9rTaGpxQiyEt2X0PlAxwA   1   0         40            0       38mb           38mb
-yellow open   fluent-log-fb-only-2022.05.03 83TjPvd1Tu-lP4fsIPdZ8A   1   1        145            0    157.2kb        157.2kb
 ```
 
 6. If you chose to forward the logs to Kafka in the previous steps, you could query the kafka cluster and its topic:
