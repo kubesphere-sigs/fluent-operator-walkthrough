@@ -9,7 +9,7 @@
 		- [Deploy Fluentd](#deploy-fluentd)
 	- [Fluent Bit Only mode](#fluent-bit-only-mode)
 		- [Using Fluent Bit to collect kubelet logs and output to Elasticsearch](#using-fluent-bit-to-collect-kubelet-logs-and-output-to-elasticsearch)
-		- [Using Fluent Bit to collect K8s application logs and output to Kafka](#using-fluent-bit-to-collect-k8s-application-logs-and-output-to-kafka)
+		- [Using Fluent Bit to collect K8s application logs and output to Kafka and Elasticsearch](#using-fluent-bit-to-collect-k8s-application-logs-and-output-to-kafka-and-elasticsearch)
 	- [Fluent Bit + Fluentd mode](#fluent-bit--fluentd-mode)
 		- [Forward logs from Fluent Bit to Fluentd](#forward-logs-from-fluent-bit-to-fluentd)
 		- [Enable Fluentd Forward Input plugin to receive logs from Fluent Bit](#enable-fluentd-forward-input-plugin-to-receive-logs-from-fluent-bit)
@@ -29,6 +29,9 @@
 To get some hands-on experience on the Fluent Operator, you'll need a minikube cluster. You also need to set up a Kafka cluster and an Elasticsearch cluster in this Kind cluster.
 
 ```shell
+# If you already have a K8s cluster, you can skip installing minikube.
+# Please be aware that the fluentbit and fluentd cases in this walkthrough might not work properly in a KinD cluster
+# A minikube cluster is recommended if you don't have a K8s cluster.
 # Setup a minikube cluster on the linux
 ./create-minikube-cluster.sh
 # Setup a minikube cluster on the mac
@@ -38,6 +41,7 @@ To get some hands-on experience on the Fluent Operator, you'll need a minikube c
 ./deploy-kafka.sh
 
 # Setup an Elasticsearch cluster in the elastic namespace
+# run 'export INSTALL_HELM=yes' first if helm is not installed
 ./deploy-es.sh
 ```
 >Note:
@@ -45,7 +49,6 @@ To get some hands-on experience on the Fluent Operator, you'll need a minikube c
 > <br>brew unlink minikube<br>
 > <br>brew link minikube<br>
 > Reference: https://minikube.sigs.k8s.io/docs/start/
-
 ## Install Fluent Operator
 
 Fluent Operator controls the lifecycle of the Fluent Bit and Fluentd. You can use the following script to launch the Fluent Operator in the `fluent` namespace:
@@ -109,7 +112,7 @@ spec:
   - forward: 
       bind: 0.0.0.0
       port: 24224
-  replicas: 3
+  replicas: 1 
   image: kubesphere/fluentd:v1.14.4
   fluentdCfgSelector: 
     matchLabels:
@@ -211,10 +214,7 @@ data:
     function add_time(tag, timestamp, record)
       new_record = {}
       timeStr = os.date("!*t", timestamp["sec"])
-      t = string.format("%4d-%02d-%02dT%02d:%02d:%02d.%sZ",
-    		timeStr["year"], timeStr["month"], timeStr["day"],
-    		timeStr["hour"], timeStr["min"], timeStr["sec"],
-    		timestamp["nsec"])
+      t = string.format("%4d-%02d-%02dT%02d:%02d:%02d.%sZ", timeStr["year"], timeStr["month"], timeStr["day"], timeStr["hour"], timeStr["min"], timeStr["sec"], timestamp["nsec"])
       kubernetes = {}
       kubernetes["pod_name"] = record["_HOSTNAME"]
       kubernetes["container_name"] = record["SYSLOG_IDENTIFIER"]
@@ -266,7 +266,7 @@ Within a couple of minutes, you can double check the results in the Elasticsearc
 
 > To double check the output, please refer to [this guide](#how-to-check-the-configuration-and-data).
 
-### Using Fluent Bit to collect K8s application logs and output to Kafka
+### Using Fluent Bit to collect K8s application logs and output to Kafka and Elasticsearch
 
 ```shell
 cat <<EOF | kubectl apply -f -
@@ -326,6 +326,8 @@ spec:
   tail:
     tag: kube.*
     path: /var/log/containers/*.log
+    # Exclude logs from util pod
+    excludePath: /var/log/containers/utils_default_utils-*.log
     parser: docker
     refreshIntervalSeconds: 10
     memBufLimit: 5MB
@@ -376,8 +378,25 @@ metadata:
 spec:
   matchRegex: (?:kube|service)\.(.*)
   kafka:
-    brokers: my-cluster-kafka-bootstrap.kafka.svc:9091,my-cluster-kafka-bootstrap.kafka.svc:9092,my-cluster-kafka-bootstrap.kafka.svc:9093
+    brokers: my-cluster-kafka-brokers.kafka.svc:9092
     topics: fluent-log
+---
+apiVersion: fluentbit.fluent.io/v1alpha2
+kind: ClusterOutput
+metadata:
+  name: k8s-app-es
+  labels:
+    fluentbit.fluent.io/enabled: "true"
+    fluentbit.fluent.io/mode: "k8s"
+spec:
+  matchRegex: (?:kube|service)\.(.*)
+  es:
+    host: elasticsearch-master.elastic.svc
+    port: 9200
+    generateID: true
+    logstashPrefix: fluent-app-log-fb-only
+    logstashFormat: true
+    timeKey: "@timestamp"  
 EOF
 ```
 
@@ -413,7 +432,7 @@ metadata:
   name: fluentd
   labels:
     fluentbit.fluent.io/enabled: "true"
-    fluentbit.fluent.io/component: logging
+    fluentbit.fluent.io/mode: "k8s"
 spec:
   matchRegex: (?:kube|service)\.(.*)
   forward:
@@ -462,6 +481,8 @@ spec:
   watchedNamespaces: 
   - kube-system
   - default
+  - kafka
+  - elastic
   clusterOutputSelector:
     matchLabels:
       output.fluentd.fluent.io/scope: "cluster"
@@ -504,7 +525,7 @@ apiVersion: fluentd.fluent.io/v1alpha1
 kind: FluentdConfig
 metadata:
   name: namespace-fluentd-config
-  namespace: fluent
+  namespace: kube-system
   labels:
     config.fluentd.fluent.io/enabled: "true"
 spec:
@@ -517,7 +538,7 @@ apiVersion: fluentd.fluent.io/v1alpha1
 kind: Output
 metadata:
   name: namespace-fluentd-output-es
-  namespace: fluent
+  namespace: kube-system
   labels:
     output.fluentd.fluent.io/scope: "namespace"
     output.fluentd.fluent.io/enabled: "true"
@@ -742,7 +763,7 @@ metadata:
 spec: 
   outputs: 
   - kafka:
-      brokers: my-cluster-kafka-bootstrap.default.svc:9091,my-cluster-kafka-bootstrap.default.svc:9092,my-cluster-kafka-bootstrap.default.svc:9093
+      brokers: my-cluster-kafka-brokers.kafka.svc:9092
       useEventTime: true
       topicKey: kubernetes_ns
 EOF
@@ -1042,7 +1063,7 @@ kubectl -n fluent get secrets fluentd-config -ojson | jq '.data."app.conf"' | aw
   <match **>
     @id  ClusterFluentdConfig-cluster-fluentd-config::cluster::clusteroutput::fluentd-output-kafka-0
     @type  kafka2
-    brokers  my-cluster-kafka-bootstrap.kafka.svc:9091,my-cluster-kafka-bootstrap.kafka.svc:9092,my-cluster-kafka-bootstrap.kafka.svc:9093
+    brokers  my-cluster-kafka-brokers.kafka.svc:9092
     topic_key  kubernetes_ns
     use_event_time  true
     <format>
@@ -1073,15 +1094,17 @@ kubectl -n elastic exec -it elasticsearch-master-0 -c elasticsearch --  curl -X 
 
 ```bash
 kubectl -n elastic exec -it elasticsearch-master-0 -c elasticsearch -- curl 'localhost:9200/_cat/indices?v'
-health status index                         uuid                   pri rep docs.count docs.deleted store.size pri.store.size
-green  open   .geoip_databases              j9rTaGpxQiyEt2X0PlAxwA   1   0         40            0       38mb           38mb
-yellow open   fluent-log-fb-only-2022.05.03 83TjPvd1Tu-lP4fsIPdZ8A   1   1        145            0    157.2kb        157.2kb
 ```
 
 6. If you chose to forward the logs to Kafka in the previous steps, you could query the kafka cluster and its topic:
    
 ```bash
-# kubectl -n kafka exec -it my-cluster-kafka-0 -- bin/kafka-console-consumer.sh --bootstrap-server my-cluster-kafka-bootstrap:9092 --topic <namespace or fluent-log>
+# Enter a util pod to connect to kafka
+kubectl run --rm utils -it --image arunvelsriram/utils bash
+# Connect to kafka and read data from a kafka topic
+kafkacat -C -b my-cluster-kafka-brokers.kafka.svc:9092 -t <namespace or fluent-log>
+# exit the util pod
+exit
 ```
 
 > Replace <namespace or fluent-log> to the actual topic.
