@@ -29,6 +29,9 @@
 To get some hands-on experience on the Fluent Operator, you'll need a minikube cluster. You also need to set up a Kafka cluster and an Elasticsearch cluster in this Kind cluster.
 
 ```shell
+# If you already have a K8s cluster, you can skip installing minikube.
+# Please be aware that the fluentbit and fluentd cases in this walkthrough might not work properly in a KinD cluster
+# A minikube cluster is recommended if you don't have a K8s cluster.
 # Setup a minikube cluster on the linux
 ./create-minikube-cluster.sh
 # Setup a minikube cluster on the mac
@@ -38,6 +41,7 @@ To get some hands-on experience on the Fluent Operator, you'll need a minikube c
 ./deploy-kafka.sh
 
 # Setup an Elasticsearch cluster in the elastic namespace
+# run 'export INSTALL_HELM=yes' first if helm is not installed
 ./deploy-es.sh
 ```
 >Note:
