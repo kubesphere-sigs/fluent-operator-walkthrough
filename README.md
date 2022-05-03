@@ -9,7 +9,7 @@
 		- [Deploy Fluentd](#deploy-fluentd)
 	- [Fluent Bit Only mode](#fluent-bit-only-mode)
 		- [Using Fluent Bit to collect kubelet logs and output to Elasticsearch](#using-fluent-bit-to-collect-kubelet-logs-and-output-to-elasticsearch)
-		- [Using Fluent Bit to collect K8s application logs and output to Kafka](#using-fluent-bit-to-collect-k8s-application-logs-and-output-to-kafka)
+		- [Using Fluent Bit to collect K8s application logs and output to Kafka and Elasticsearch](#using-fluent-bit-to-collect-k8s-application-logs-and-output-to-kafka-and-elasticsearch)
 	- [Fluent Bit + Fluentd mode](#fluent-bit--fluentd-mode)
 		- [Forward logs from Fluent Bit to Fluentd](#forward-logs-from-fluent-bit-to-fluentd)
 		- [Enable Fluentd Forward Input plugin to receive logs from Fluent Bit](#enable-fluentd-forward-input-plugin-to-receive-logs-from-fluent-bit)
@@ -266,7 +266,7 @@ Within a couple of minutes, you can double check the results in the Elasticsearc
 
 > To double check the output, please refer to [this guide](#how-to-check-the-configuration-and-data).
 
-### Using Fluent Bit to collect K8s application logs and output to Kafka
+### Using Fluent Bit to collect K8s application logs and output to Kafka and Elasticsearch
 
 ```shell
 cat <<EOF | kubectl apply -f -
@@ -380,6 +380,23 @@ spec:
   kafka:
     brokers: my-cluster-kafka-brokers.kafka.svc:9092
     topics: fluent-log
+---
+apiVersion: fluentbit.fluent.io/v1alpha2
+kind: ClusterOutput
+metadata:
+  name: k8s-app-es
+  labels:
+    fluentbit.fluent.io/enabled: "true"
+    fluentbit.fluent.io/mode: "k8s"
+spec:
+  matchRegex: (?:kube|service)\.(.*)
+  es:
+    host: elasticsearch-master.elastic.svc
+    port: 9200
+    generateID: true
+    logstashPrefix: fluent-app-log-fb-only
+    logstashFormat: true
+    timeKey: "@timestamp"  
 EOF
 ```
 
@@ -464,6 +481,8 @@ spec:
   watchedNamespaces: 
   - kube-system
   - default
+  - kafka
+  - elastic
   clusterOutputSelector:
     matchLabels:
       output.fluentd.fluent.io/scope: "cluster"
@@ -506,7 +525,7 @@ apiVersion: fluentd.fluent.io/v1alpha1
 kind: FluentdConfig
 metadata:
   name: namespace-fluentd-config
-  namespace: fluent
+  namespace: kube-system
   labels:
     config.fluentd.fluent.io/enabled: "true"
 spec:
@@ -519,7 +538,7 @@ apiVersion: fluentd.fluent.io/v1alpha1
 kind: Output
 metadata:
   name: namespace-fluentd-output-es
-  namespace: fluent
+  namespace: kube-system
   labels:
     output.fluentd.fluent.io/scope: "namespace"
     output.fluentd.fluent.io/enabled: "true"
