@@ -49,7 +49,6 @@ To get some hands-on experience on the Fluent Operator, you'll need a minikube c
 > <br>brew unlink minikube<br>
 > <br>brew link minikube<br>
 > Reference: https://minikube.sigs.k8s.io/docs/start/
-
 ## Install Fluent Operator
 
 Fluent Operator controls the lifecycle of the Fluent Bit and Fluentd. You can use the following script to launch the Fluent Operator in the `fluent` namespace:
@@ -113,7 +112,7 @@ spec:
   - forward: 
       bind: 0.0.0.0
       port: 24224
-  replicas: 3
+  replicas: 1 
   image: kubesphere/fluentd:v1.14.4
   fluentdCfgSelector: 
     matchLabels:
