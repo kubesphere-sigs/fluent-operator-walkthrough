@@ -376,7 +376,7 @@ metadata:
 spec:
   matchRegex: (?:kube|service)\.(.*)
   kafka:
-    brokers: my-cluster-kafka-bootstrap.kafka.svc:9091,my-cluster-kafka-bootstrap.kafka.svc:9092,my-cluster-kafka-bootstrap.kafka.svc:9093
+    brokers: my-cluster-kafka-brokers.kafka.svc:9092
     topics: fluent-log
 EOF
 ```
@@ -742,7 +742,7 @@ metadata:
 spec: 
   outputs: 
   - kafka:
-      brokers: my-cluster-kafka-bootstrap.default.svc:9091,my-cluster-kafka-bootstrap.default.svc:9092,my-cluster-kafka-bootstrap.default.svc:9093
+      brokers: my-cluster-kafka-brokers.kafka.svc:9092
       useEventTime: true
       topicKey: kubernetes_ns
 EOF
@@ -1042,7 +1042,7 @@ kubectl -n fluent get secrets fluentd-config -ojson | jq '.data."app.conf"' | aw
   <match **>
     @id  ClusterFluentdConfig-cluster-fluentd-config::cluster::clusteroutput::fluentd-output-kafka-0
     @type  kafka2
-    brokers  my-cluster-kafka-bootstrap.kafka.svc:9091,my-cluster-kafka-bootstrap.kafka.svc:9092,my-cluster-kafka-bootstrap.kafka.svc:9093
+    brokers  my-cluster-kafka-brokers.kafka.svc:9092
     topic_key  kubernetes_ns
     use_event_time  true
     <format>
@@ -1081,7 +1081,12 @@ yellow open   fluent-log-fb-only-2022.05.03 83TjPvd1Tu-lP4fsIPdZ8A   1   1      
 6. If you chose to forward the logs to Kafka in the previous steps, you could query the kafka cluster and its topic:
    
 ```bash
-# kubectl -n kafka exec -it my-cluster-kafka-0 -- bin/kafka-console-consumer.sh --bootstrap-server my-cluster-kafka-bootstrap:9092 --topic <namespace or fluent-log>
+# Enter a util pod to connect to kafka
+kubectl run --rm utils -it --image arunvelsriram/utils bash
+# Connect to kafka and read data from a kafka topic
+kafkacat -C -b my-cluster-kafka-brokers.kafka.svc:9092 -t <namespace or fluent-log>
+# exit the util pod
+exit
 ```
 
 > Replace <namespace or fluent-log> to the actual topic.
