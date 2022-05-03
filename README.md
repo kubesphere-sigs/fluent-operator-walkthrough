@@ -1052,7 +1052,7 @@ kubectl -n fluent get secrets fluentd-config -ojson | jq '.data."app.conf"' | aw
 </label>
 ```
 
-4. Query the elastic cluster kubernetes_ns buckets:
+4. If you chose to forward the logs to Elasticsearch in the previous steps, you could query the elastic cluster kubernetes_ns buckets:
 
 ```bash
 kubectl -n elastic exec -it elasticsearch-master-0 -c elasticsearch --  curl -X GET "localhost:9200/fluent-log*/_search?pretty" -H 'Content-Type: application/json' -d '{                                                           
@@ -1069,7 +1069,16 @@ kubectl -n elastic exec -it elasticsearch-master-0 -c elasticsearch --  curl -X 
 
 > If you don't use fluentd to extract the namspace field, you can use other query API.
 
-5. Check the kafka cluster:
+5. You could also query the index of Elasticsearch. You will find that a new index has been created by fluent operator.
+
+```bash
+kubectl -n elastic exec -it elasticsearch-master-0 -c elasticsearch -- curl 'localhost:9200/_cat/indices?v'
+health status index                         uuid                   pri rep docs.count docs.deleted store.size pri.store.size
+green  open   .geoip_databases              j9rTaGpxQiyEt2X0PlAxwA   1   0         40            0       38mb           38mb
+yellow open   fluent-log-fb-only-2022.05.03 83TjPvd1Tu-lP4fsIPdZ8A   1   1        145            0    157.2kb        157.2kb
+```
+
+6. If you chose to forward the logs to Kafka in the previous steps, you could query the kafka cluster and its topic:
    
 ```bash
 # kubectl -n kafka exec -it my-cluster-kafka-0 -- bin/kafka-console-consumer.sh --bootstrap-server my-cluster-kafka-bootstrap:9092 --topic <namespace or fluent-log>
