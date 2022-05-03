@@ -214,10 +214,7 @@ data:
     function add_time(tag, timestamp, record)
       new_record = {}
       timeStr = os.date("!*t", timestamp["sec"])
-      t = string.format("%4d-%02d-%02dT%02d:%02d:%02d.%sZ",
-    		timeStr["year"], timeStr["month"], timeStr["day"],
-    		timeStr["hour"], timeStr["min"], timeStr["sec"],
-    		timestamp["nsec"])
+      t = string.format("%4d-%02d-%02dT%02d:%02d:%02d.%sZ", timeStr["year"], timeStr["month"], timeStr["day"], timeStr["hour"], timeStr["min"], timeStr["sec"], timestamp["nsec"])
       kubernetes = {}
       kubernetes["pod_name"] = record["_HOSTNAME"]
       kubernetes["container_name"] = record["SYSLOG_IDENTIFIER"]
