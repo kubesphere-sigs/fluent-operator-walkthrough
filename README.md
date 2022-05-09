@@ -120,7 +120,7 @@ spec:
 EOF
 ```
 
-Now we've setup FluentBit and Flunetd, let's collect, process, and send logs to various sinks in the next few steps.
+Now we've setup FluentBit and Fluentd, let's collect, process, and send logs to various sinks in the next few steps.
 
 ## Fluent Bit Only mode
 
@@ -266,7 +266,9 @@ Within a couple of minutes, you can double check the results in the Elasticsearc
 
 > To double check the output, please refer to [this guide](#how-to-check-the-configuration-and-data).
 
-### Using Fluent Bit to collect K8s application logs and output to Kafka and Elasticsearch
+### Using Fluent Bit to collect K8s application logs and output to Kafka, Elasticsearch and Loki
+
+This covers the various data sinks in this example, they do not all have to be enabled but you will get errors on trying to send to a sink that is not available.
 
 ```shell
 cat <<EOF | kubectl apply -f -
@@ -367,6 +369,12 @@ spec:
       - kubernetes_*
       nestUnder: kubernetes
       removePrefix: kubernetes_
+```
+
+The following are each output so add/remove as necessary:
+
+```shell
+cat <<EOF | kubectl apply -f -
 ---
 apiVersion: fluentbit.fluent.io/v1alpha2
 kind: ClusterOutput
@@ -396,11 +404,25 @@ spec:
     generateID: true
     logstashPrefix: fluent-app-log-fb-only
     logstashFormat: true
-    timeKey: "@timestamp"  
+    timeKey: "@timestamp"
+---
+apiVersion: fluentbit.fluent.io/v1alpha2
+kind: ClusterOutput
+metadata:
+  name: k8s-app-loki
+  labels:
+    fluentbit.fluent.io/enabled: "true"
+    fluentbit.fluent.io/mode: "k8s"
+spec:
+  matchRegex: (?:kube|service)\.(.*)
+  loki:
+    host: loki.loki.svc
+    labels:
+      - job=fluentbit
 EOF
 ```
 
-You'll see the FluentBit DaemonSet up and running with other CRs:
+We should see the FluentBit DaemonSet up and running with other CRs:
 
 ```shell
 kubectl -n fluent get daemonset
@@ -1076,7 +1098,7 @@ kubectl -n fluent get secrets fluentd-config -ojson | jq '.data."app.conf"' | aw
 4. If you chose to forward the logs to Elasticsearch in the previous steps, you could query the elastic cluster kubernetes_ns buckets:
 
 ```bash
-kubectl -n elastic exec -it elasticsearch-master-0 -c elasticsearch --  curl -X GET "localhost:9200/fluent-log*/_search?pretty" -H 'Content-Type: application/json' -d '{                                                           
+kubectl -n elastic exec -it elasticsearch-master-0 -c elasticsearch --  curl -X GET "localhost:9200/fluent-log*/_search?pretty" -H 'Content-Type: application/json' -d '{
    "size" : 0,
    "aggs" : {
       "kubernetes_ns": {
