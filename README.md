@@ -2,7 +2,7 @@
 <!-- TOC -->
 
 - [fluent-operator-walkthrough](#fluent-operator-walkthrough)
-	- [Prerequisite](#prerequisite)
+	- [Prerequisites](#prerequisites)
 	- [Install Fluent Operator](#install-fluent-operator)
 	- [Deploy Fluent Bit and Fluentd](#deploy-fluent-bit-and-fluentd)
 		- [Deploy Fluent Bit](#deploy-fluent-bit)
@@ -24,9 +24,10 @@
 	- [How to check the configuration and data](#how-to-check-the-configuration-and-data)
 
 <!-- /TOC -->
-## Prerequisite
+## Prerequisites
 
-To get some hands-on experience on the Fluent Operator, you'll need a minikube cluster. You also need to set up a Kafka cluster and an Elasticsearch cluster in this Kind cluster.
+To get some hands-on experience on the Fluent Operator, you need a Kubernetes cluster - minikube is used here. 
+You also need some kind of data sink to receive logs, in this case we set up a Kafka cluster and an Elasticsearch cluster in the same Kubernetes cluster.
 
 ```shell
 # If you already have a K8s cluster, you can skip installing minikube.
@@ -45,31 +46,36 @@ To get some hands-on experience on the Fluent Operator, you'll need a minikube c
 ./deploy-es.sh
 ```
 >Note:
-> If you fail in mac execution, you may have to remove the old minikube links and link the newly installed binary:
+> On MacOS you may have to remove the old minikube links and link the newly installed binary:
 > <br>brew unlink minikube<br>
 > <br>brew link minikube<br>
 > Reference: https://minikube.sigs.k8s.io/docs/start/
+
+For some other examples of deploying data sinks (e.g. Loki, etc.) then have a look at https://github.com/calyptia/fluent-bit-devtools.
+
 ## Install Fluent Operator
 
-Fluent Operator controls the lifecycle of the Fluent Bit and Fluentd. You can use the following script to launch the Fluent Operator in the `fluent` namespace:
+Fluent Operator controls the lifecycle of the Fluent Bit and Fluentd deployments. 
+You can use the following script to launch the Fluent Operator in the `fluent` namespace:
 
 ```shell
 ./deploy-fluent-operator.sh
 ```
 
-You can find more details of the Fluent Bit and Fluentd CRDs in the links below:
+You can find more details of the Fluent Bit and Fluentd Custom Resource Definitions (CRDs) in the links below:
 
 - https://github.com/fluent/fluent-operator#fluent-bit
 - https://github.com/fluent/fluent-operator#fluentd
   
 ## Deploy Fluent Bit and Fluentd
 
-Both Fluent Bit and Fluentd are defined as CRDs in Fluent Operator, you can create the Fluent Bit DaemonSet or the Fluentd StatefulSet by declaring FluentBit or Fluentd CR.
+The configuration of Fluent Bit and Fluentd are defined as CRDs with the Fluent Operator: you can create a Fluent Bit DaemonSet or a Fluentd StatefulSet by declaring a FluentBit or Fluentd Custom Resource (CR).
 
 ### Deploy Fluent Bit
 
 The `FluentBit` CR works together with `ClusterFluentBitConfig` and they should be created together.
-The following `FluentBit` CR is just an example. To deply the actually Fluent Bit DaemonSet, please refer to the [Using Fluent Bit to collect kubelet logs and output to Elasticsearch](#using-fluent-bit-to-collect-kubelet-logs-and-output-to-elasticsearch) and [Using Fluent Bit to collect K8s application logs and output to Kafka](#using-fluent-bit-to-collect-k8s-application-logs-and-output-to-kafka) sections.
+The following `FluentBit` CR is just an example. 
+To deploy the actual Fluent Bit DaemonSet, please refer to the [Using Fluent Bit to collect kubelet logs and output to Elasticsearch](#using-fluent-bit-to-collect-kubelet-logs-and-output-to-elasticsearch) and [Using Fluent Bit to collect K8s application logs and output to Kafka](#using-fluent-bit-to-collect-k8s-application-logs-and-output-to-kafka) sections.
   
 ```yaml
 apiVersion: fluentbit.fluent.io/v1alpha2
@@ -124,7 +130,7 @@ Now we've setup FluentBit and Fluentd, let's collect, process, and send logs to 
 
 ## Fluent Bit Only mode
 
-Fluent Bit is light-weighed, you can only use Fluent Bit to process logs.
+Fluent Bit is light-weight and if you prefer you can just use Fluent Bit to process logs.
 
 ### Using Fluent Bit to collect kubelet logs and output to Elasticsearch
 
@@ -251,7 +257,7 @@ spec:
 EOF
 ```
 
-You'll see the FluentBit DaemonSet up and running with other CRs:
+You should see the FluentBit DaemonSet up and running with other CRs:
 
 ```shell
 kubectl -n fluent get daemonset
@@ -262,7 +268,7 @@ kubectl -n fluent get clusterfilter.fluentbit.fluent.io
 kubectl -n fluent get clusteroutput.fluentbit.fluent.io
 ```
 
-Within a couple of minutes, you can double check the results in the Elasticsearch cluster.
+Within a couple of minutes, you can double check the results in the Elasticsearch cluster (remember to set it up first or use whichever data sink you prefer).
 
 > To double check the output, please refer to [this guide](#how-to-check-the-configuration-and-data).
 
@@ -433,18 +439,18 @@ kubectl -n fluent get clusterfilter.fluentbit.fluent.io
 kubectl -n fluent get clusteroutput.fluentbit.fluent.io
 ```
 
-Within a couple of minutes, you can double check the output in the Kafka cluster.
+Within a couple of minutes, you can double check the output in the Kafka cluster (or your preferred data sink - remember to set it up first).
 
 > To double check the output, please refer to [this guide](#how-to-check-the-configuration-and-data).
 
 ## Fluent Bit + Fluentd mode
 
 With its rich plugins, Fluentd acts as a log aggregation layer and is able to perform more advanced log processing.
-You can forward logs from Fluent Bit to Fluentd with ease using Fluent Operator.
+You can forward logs from Fluent Bit to Fluentd with ease using the Fluent Operator.
 
 ### Forward logs from Fluent Bit to Fluentd
 
-To forward logs from Fluent Bit to Fluentd, you'll need to enable the Fluent Bit forward plugin as below:
+To forward logs from Fluent Bit to Fluentd, we need to enable the Fluent Bit forward plugin as below:
 
 ```shell
 cat <<EOF | kubectl apply -f -
@@ -465,7 +471,7 @@ EOF
 
 ### Enable Fluentd Forward Input plugin to receive logs from Fluent Bit
 
-The Fluentd forward Input plugin has been enabled by default when you deploy Fluentd in the previous step, so you needn't to do anything to enable it now.
+The Fluentd forward Input plugin has been enabled by default when we deploy Fluentd in the previous step, so nothing else is required.
 
 ```yaml
 apiVersion: fluentd.fluent.io/v1alpha1
@@ -489,7 +495,7 @@ spec:
 
 ### ClusterFluentdConfig: Fluentd cluster-wide configuration
 
-You can send logs Fluentd received from Fluent Bit to a cluster-wide sink defined by a `ClusterOutput`.
+We can send logs Fluentd received from Fluent Bit to a cluster-wide sink defined by a `ClusterOutput`.
 
 ```shell
 cat <<EOF | kubectl apply -f -
@@ -527,7 +533,7 @@ spec:
 EOF
 ```
 
-You'll see the Fluentd StatefulSet up and running with other CRs:
+We should see the Fluentd StatefulSet up and running with other CRs:
 
 ```shell
 kubectl -n fluent get statefulset
@@ -538,7 +544,7 @@ kubectl -n fluent get clusteroutput.fluentd.fluent.io
 
 ### FluentdConfig: Fluentd namespaced-wide configuration
 
-You can send logs Fluentd received from Fluent Bit to a namespace-wide sink defined by a `Output`.
+We can send logs Fluentd received from Fluent Bit to a namespace-wide sink defined by a `Output`.
 Only logs in the same namespace as `FluentdConfig` will be sent to the `Output`.
 
 ```shell
@@ -574,7 +580,7 @@ spec:
 EOF
 ```
 
-You'll see the Fluentd CRs created:
+We should see the Fluentd CRs created:
 
 ```shell
 kubectl -n fluent get fluentdconfig
@@ -583,9 +589,9 @@ kubectl -n fluent get output.fluentd.fluent.io
 
 ### Use cluster-wide and namespaced-wide FluentdConfig together
 
-You can use `FluentdConfig` and `ClusterFluentdConfig` together like below.
-The `FluentdConfig` will send log of the `fluent` namespace to the `ClusterOutput`
-The `ClusterFluentdConfig` will send log of the global `watchedNamespaces` to the `ClusterOutput`
+We can use `FluentdConfig` and `ClusterFluentdConfig` together like below.
+The `FluentdConfig` will send logs from the `fluent` namespace to the `ClusterOutput`.
+The `ClusterFluentdConfig` will send logs from any of the `watchedNamespaces` to the `ClusterOutput`.
 
 ```shell
 cat <<EOF | kubectl apply -f -
@@ -634,7 +640,7 @@ spec:
 EOF
 ```
 
-You'll see the Fluentd CRs created:
+We should see the Fluentd CRs created:
 
 ```shell
 kubectl -n fluent get clusterfluentdconfig
@@ -642,7 +648,7 @@ kubectl -n fluent get fluentdconfig
 kubectl -n fluent get clusteroutput.fluentd.fluent.io
 ```
 
-### Use cluster-wide and namespaced-wide FluentdConfig together in multi-tenant scenarios
+### Use cluster-wide and namespaced FluentdConfig together in multi-tenant scenarios
 
 ```shell
 cat <<EOF | kubectl apply -f -
@@ -726,7 +732,7 @@ spec:
 EOF
 ```
 
-You'll see the Fluentd CRs created:
+we should see the Fluentd CRs created:
 
 ```shell
 kubectl -n fluent get clusterfluentdconfig
@@ -737,7 +743,7 @@ kubectl -n fluent get clusteroutput.fluentd.fluent.io
 
 ### Route logs to different Kafka topics based on namespace
 
-You can use Fluentd filter to distribute logs to different topics based on namespace.
+We can use Fluentd filter to distribute logs to different Kafka topics based on namespace.
 
 ```shell
 cat <<EOF | kubectl apply -f -
@@ -791,7 +797,7 @@ spec:
 EOF
 ```
 
-You'll see the Fluentd CRs created:
+we should see the Fluentd CRs created:
 
 ```shell
 kubectl -n fluent get clusterfluentdconfig
@@ -801,7 +807,7 @@ kubectl -n fluent get clusteroutput.fluentd.fluent.io
 
 ### Using buffer for Fluentd output
 
-You can add a buffer to cache logs for the output plugins.
+We can add a buffer to cache logs for the output plugins.
 
 ```shell
 cat <<EOF | kubectl apply -f -
@@ -863,7 +869,7 @@ spec:
 EOF
 ```
 
-You'll see the Fluentd CRs created:
+we should see the Fluentd CRs created:
 
 ```shell
 kubectl -n fluent get clusterfluentdconfig
@@ -875,7 +881,7 @@ kubectl -n fluent get clusteroutput.fluentd.fluent.io
 
 ### Use fluentd to receive logs from HTTP and output to stdout
 
-You can use Fluentd only to receive logs via HTTP.
+We can use Fluentd to receive logs via HTTP.
 
 ```shell
 cat <<EOF | kubectl apply -f -
@@ -943,7 +949,7 @@ spec:
 EOF
 ```
 
-You'll see the Fluentd CRs created:
+we should see the Fluentd CRs created:
 
 ```shell
 kubectl -n fluent get fluentd
@@ -952,7 +958,7 @@ kubectl -n fluent get filter.fluentd.fluent.io
 kubectl -n fluent get output.fluentd.fluent.io
 ```
 
-Then you can send logs to the endpoint by using curl:
+Then we can send logs to the endpoint by using curl:
 
 ```
 curl -X POST -d 'json={"foo":"bar"}' http://<localhost:9880>/app.log
@@ -964,7 +970,7 @@ curl -X POST -d 'json={"foo":"bar"}' http://<localhost:9880>/app.log
 1. See the state of the Fluent Operator:
 
 ```bash
-kubectl get po -n fluent
+kubectl get pod -n fluent
 ```
 
 2. See the generated fluent bit configuration:
