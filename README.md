@@ -9,14 +9,14 @@
 		- [Deploy Fluentd](#deploy-fluentd)
 	- [Fluent Bit Only mode](#fluent-bit-only-mode)
 		- [Using Fluent Bit to collect kubelet logs and output to Elasticsearch](#using-fluent-bit-to-collect-kubelet-logs-and-output-to-elasticsearch)
-		- [Using Fluent Bit to collect K8s application logs and output to Kafka and Elasticsearch](#using-fluent-bit-to-collect-k8s-application-logs-and-output-to-kafka-and-elasticsearch)
+		- [Using Fluent Bit to collect K8s application logs and output to Kafka, Elasticsearch and Loki](#using-fluent-bit-to-collect-k8s-application-logs-and-output-to-kafka-elasticsearch-and-loki)
 	- [Fluent Bit + Fluentd mode](#fluent-bit--fluentd-mode)
 		- [Forward logs from Fluent Bit to Fluentd](#forward-logs-from-fluent-bit-to-fluentd)
 		- [Enable Fluentd Forward Input plugin to receive logs from Fluent Bit](#enable-fluentd-forward-input-plugin-to-receive-logs-from-fluent-bit)
 		- [ClusterFluentdConfig: Fluentd cluster-wide configuration](#clusterfluentdconfig-fluentd-cluster-wide-configuration)
 		- [FluentdConfig: Fluentd namespaced-wide configuration](#fluentdconfig-fluentd-namespaced-wide-configuration)
 		- [Use cluster-wide and namespaced-wide FluentdConfig together](#use-cluster-wide-and-namespaced-wide-fluentdconfig-together)
-		- [Use cluster-wide and namespaced-wide FluentdConfig together in multi-tenant scenarios](#use-cluster-wide-and-namespaced-wide-fluentdconfig-together-in-multi-tenant-scenarios)
+		- [Use cluster-wide and namespaced FluentdConfig together in multi-tenant scenarios](#use-cluster-wide-and-namespaced-fluentdconfig-together-in-multi-tenant-scenarios)
 		- [Route logs to different Kafka topics based on namespace](#route-logs-to-different-kafka-topics-based-on-namespace)
 		- [Using buffer for Fluentd output](#using-buffer-for-fluentd-output)
 	- [Fluentd only mode](#fluentd-only-mode)
@@ -75,7 +75,7 @@ The configuration of Fluent Bit and Fluentd are defined as CRDs with the Fluent 
 
 The `FluentBit` CR works together with `ClusterFluentBitConfig` and they should be created together.
 The following `FluentBit` CR is just an example. 
-To deploy the actual Fluent Bit DaemonSet, please refer to the [Using Fluent Bit to collect kubelet logs and output to Elasticsearch](#using-fluent-bit-to-collect-kubelet-logs-and-output-to-elasticsearch) and [Using Fluent Bit to collect K8s application logs and output to Kafka](#using-fluent-bit-to-collect-k8s-application-logs-and-output-to-kafka) sections.
+To deploy the actual Fluent Bit DaemonSet, please refer to the [Using Fluent Bit to collect kubelet logs and output to Elasticsearch](#using-fluent-bit-to-collect-kubelet-logs-and-output-to-elasticsearch) and [Using Fluent Bit to collect K8s application logs and output to Kafka, Elasticsearch and Loki](#using-fluent-bit-to-collect-k8s-application-logs-and-output-to-kafka-elasticsearch-and-loki) sections.
   
 ```yaml
 apiVersion: fluentbit.fluent.io/v1alpha2
@@ -471,9 +471,10 @@ EOF
 
 ### Enable Fluentd Forward Input plugin to receive logs from Fluent Bit
 
-The Fluentd forward Input plugin has been enabled by default when we deploy Fluentd in the previous step, so nothing else is required.
+Deploy Fluentd with its forward input plugin enabled:
 
-```yaml
+```shell
+cat <<EOF | kubectl apply -f -
 apiVersion: fluentd.fluent.io/v1alpha1
 kind: Fluentd
 metadata:
@@ -491,6 +492,7 @@ spec:
   fluentdCfgSelector: 
     matchLabels:
       config.fluentd.fluent.io/enabled: "true"
+EOF
 ```
 
 ### ClusterFluentdConfig: Fluentd cluster-wide configuration
