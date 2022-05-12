@@ -11,4 +11,4 @@ spec:
       host: elasticsearch-master.elastic.svc
       port: 9200
       logstashFormat: true
-      logstashPrefix: fluent-log-cluster-fd
+      logstashPrefix: fluent-log-namespace-fd
