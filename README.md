@@ -860,10 +860,6 @@ metadata:
     output.fluentd.fluent.io/enabled: "true"
 spec: 
   outputs: 
-  - stdout: {}
-    buffer:
-      type: file
-      path: /buffers/stdout.log
   - elasticsearch:
       host: elasticsearch-master.elastic.svc
       port: 9200
