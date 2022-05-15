@@ -1,0 +1,54 @@
+apiVersion: fluentd.fluent.io/v1alpha1
+kind: ClusterFluentdConfig
+metadata:
+  name: cluster-fluentd-config-buffer
+  labels:
+    config.fluentd.fluent.io/enabled: "true"
+spec:
+  watchedNamespaces: 
+  - kube-system
+  - default
+  - fluent
+  - kafka
+  - elastic
+  clusterFilterSelector:
+    matchLabels:
+      filter.fluentd.fluent.io/type: "buffer"
+      filter.fluentd.fluent.io/enabled: "true"
+  clusterOutputSelector:
+    matchLabels:
+      output.fluentd.fluent.io/type: "buffer"      
+      output.fluentd.fluent.io/enabled: "true"
+---
+apiVersion: fluentd.fluent.io/v1alpha1
+kind: ClusterFilter
+metadata:
+  name: cluster-fluentd-filter-buffer
+  labels:
+    filter.fluentd.fluent.io/type: "buffer"
+    filter.fluentd.fluent.io/enabled: "true"
+spec: 
+  filters: 
+  - recordTransformer:
+      enableRuby: true
+      records:
+      - key: kubernetes_ns
+        value: ${record["kubernetes"]["namespace_name"]}
+---
+apiVersion: fluentd.fluent.io/v1alpha1
+kind: ClusterOutput
+metadata:
+  name: cluster-fluentd-output-buffer
+  labels:
+    output.fluentd.fluent.io/type: "buffer"      
+    output.fluentd.fluent.io/enabled: "true"
+spec: 
+  outputs: 
+  - elasticsearch:
+      host: elasticsearch-master.elastic.svc
+      port: 9200
+      logstashFormat: true
+      logstashPrefix: fluent-log-buffer-fd
+    buffer:
+      type: file
+      path: /buffers/es.log

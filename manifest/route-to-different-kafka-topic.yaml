@@ -1,0 +1,50 @@
+apiVersion: fluentd.fluent.io/v1alpha1
+kind: ClusterFluentdConfig
+metadata:
+  name: cluster-fluentd-config-kafka
+  labels:
+    config.fluentd.fluent.io/enabled: "true"
+spec:
+  watchedNamespaces: 
+  - kube-system
+  - default
+  - fluent
+  - kafka
+  - elastic
+  clusterFilterSelector:
+    matchLabels:
+      filter.fluentd.fluent.io/type: "k8s"
+      filter.fluentd.fluent.io/enabled: "true"
+  clusterOutputSelector:
+    matchLabels:
+      output.fluentd.fluent.io/type: "kafka"
+      output.fluentd.fluent.io/enabled: "true"
+---
+apiVersion: fluentd.fluent.io/v1alpha1
+kind: ClusterFilter
+metadata:
+  name: cluster-fluentd-filter-k8s
+  labels:
+    filter.fluentd.fluent.io/type: "k8s"
+    filter.fluentd.fluent.io/enabled: "true"
+spec: 
+  filters: 
+  - recordTransformer:
+      enableRuby: true
+      records:
+      - key: kubernetes_ns
+        value: ${record["kubernetes"]["namespace_name"]}
+---
+apiVersion: fluentd.fluent.io/v1alpha1
+kind: ClusterOutput
+metadata:
+  name: cluster-fluentd-output-kafka
+  labels:
+    output.fluentd.fluent.io/type: "kafka"
+    output.fluentd.fluent.io/enabled: "true"
+spec: 
+  outputs: 
+  - kafka:
+      brokers: my-cluster-kafka-brokers.kafka.svc:9092
+      useEventTime: true
+      topicKey: kubernetes_ns
