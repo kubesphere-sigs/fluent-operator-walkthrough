@@ -903,8 +903,7 @@ spec:
   image: kubesphere/fluentd:v1.14.4
   fluentdCfgSelector: 
     matchLabels:
-      config.fluentd.fluent.io/enabled: "true"
-   
+      config.fluentd.fluent.io/mode: "fluentd-only" 
 ---
 apiVersion: fluentd.fluent.io/v1alpha1
 kind: FluentdConfig
@@ -912,30 +911,11 @@ metadata:
   name: fluentd-only-config
   namespace: fluent
   labels:
-    config.fluentd.fluent.io/enabled: "true"
+    config.fluentd.fluent.io/mode: "fluentd-only" 
 spec:
-  filterSelector:
-    matchLabels:
-      filter.fluentd.fluent.io/mode: "fluentd-only"
-      filter.fluentd.fluent.io/enabled: "true"
   outputSelector:
     matchLabels:
-      output.fluentd.fluent.io/enabled: "true"
       output.fluentd.fluent.io/mode: "fluentd-only"
-
----
-apiVersion: fluentd.fluent.io/v1alpha1
-kind: Filter
-metadata:
-  name: fluentd-only-filter
-  namespace: fluent
-  labels:
-    filter.fluentd.fluent.io/mode: "fluentd-only"
-    filter.fluentd.fluent.io/enabled: "true"
-spec: 
-  filters: 
-    - stdout: {}
-
 ---
 apiVersion: fluentd.fluent.io/v1alpha1
 kind: Output
@@ -943,11 +923,10 @@ metadata:
   name: fluentd-only-stdout
   namespace: fluent
   labels:
-    output.fluentd.fluent.io/enabled: "true"
     output.fluentd.fluent.io/mode: "fluentd-only"
 spec: 
   outputs: 
-    - stdout: {}
+  - stdout: {}
 EOF
 ```
 
@@ -963,10 +942,8 @@ kubectl -n fluent get output.fluentd.fluent.io
 Then we can send logs to the endpoint by using curl:
 
 ```
-curl -X POST -d 'json={"foo":"bar"}' http://<localhost:9880>/app.log
+curl -X POST -d 'json={"foo":"bar"}' http://fluentd-http.fluent.svc:9880/app.log
 ```
-> replace the <localhost:9880> to the actual service or endpoint of fluentd, i.e: fluentd-http.fluent.svc:9880
-
 ## How to check the configuration and data
 
 1. See the state of the Fluent Operator:
