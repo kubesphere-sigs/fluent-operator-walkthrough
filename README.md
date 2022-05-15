@@ -378,6 +378,7 @@ spec:
       - kubernetes_*
       nestUnder: kubernetes
       removePrefix: kubernetes_
+EOF
 ```
 
 The following are each output so add/remove as necessary:
