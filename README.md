@@ -752,55 +752,7 @@ kubectl -n fluent get clusteroutput.fluentd.fluent.io
 We can use Fluentd filter to distribute logs to different Kafka topics based on namespace.
 
 ```shell
-cat <<EOF | kubectl apply -f -
-apiVersion: fluentd.fluent.io/v1alpha1
-kind: ClusterFluentdConfig
-metadata:
-  name: cluster-fluentd-config-kafka
-  labels:
-    config.fluentd.fluent.io/enabled: "true"
-spec:
-  watchedNamespaces: 
-  - kube-system
-  - default
-  clusterFilterSelector:
-    matchLabels:
-      filter.fluentd.fluent.io/type: "k8s"
-      filter.fluentd.fluent.io/enabled: "true"
-  clusterOutputSelector:
-    matchLabels:
-      output.fluentd.fluent.io/type: "kafka"
-      output.fluentd.fluent.io/enabled: "true"
----
-apiVersion: fluentd.fluent.io/v1alpha1
-kind: ClusterFilter
-metadata:
-  name: cluster-fluentd-filter-k8s
-  labels:
-    filter.fluentd.fluent.io/type: "k8s"
-    filter.fluentd.fluent.io/enabled: "true"
-spec: 
-  filters: 
-  - recordTransformer:
-      enableRuby: true
-      records:
-      - key: kubernetes_ns
-        value: ${record["kubernetes"]["namespace_name"]}
----
-apiVersion: fluentd.fluent.io/v1alpha1
-kind: ClusterOutput
-metadata:
-  name: cluster-fluentd-output-kafka
-  labels:
-    output.fluentd.fluent.io/type: "kafka"
-    output.fluentd.fluent.io/enabled: "true"
-spec: 
-  outputs: 
-  - kafka:
-      brokers: my-cluster-kafka-brokers.kafka.svc:9092
-      useEventTime: true
-      topicKey: kubernetes_ns
-EOF
+kubectl apply -f https://raw.githubusercontent.com/kubesphere-sigs/fluent-operator-walkthrough/master/manifest/route-to-different-kafka-topic.yaml
 ```
 
 we should see the Fluentd CRs created:
@@ -816,59 +768,7 @@ kubectl -n fluent get clusteroutput.fluentd.fluent.io
 We can add a buffer to cache logs for the output plugins.
 
 ```shell
-cat <<EOF | kubectl apply -f -
-apiVersion: fluentd.fluent.io/v1alpha1
-kind: ClusterFluentdConfig
-metadata:
-  name: cluster-fluentd-config-buffer
-  labels:
-    config.fluentd.fluent.io/enabled: "true"
-spec:
-  watchedNamespaces: 
-  - kube-system
-  - default
-  clusterFilterSelector:
-    matchLabels:
-      filter.fluentd.fluent.io/type: "buffer"
-      filter.fluentd.fluent.io/enabled: "true"
-  clusterOutputSelector:
-    matchLabels:
-      output.fluentd.fluent.io/type: "buffer"      
-      output.fluentd.fluent.io/enabled: "true"
----
-apiVersion: fluentd.fluent.io/v1alpha1
-kind: ClusterFilter
-metadata:
-  name: cluster-fluentd-filter-buffer
-  labels:
-    filter.fluentd.fluent.io/type: "buffer"
-    filter.fluentd.fluent.io/enabled: "true"
-spec: 
-  filters: 
-  - recordTransformer:
-      enableRuby: true
-      records:
-      - key: kubernetes_ns
-        value: ${record["kubernetes"]["namespace_name"]}
----
-apiVersion: fluentd.fluent.io/v1alpha1
-kind: ClusterOutput
-metadata:
-  name: cluster-fluentd-output-buffer
-  labels:
-    output.fluentd.fluent.io/type: "buffer"      
-    output.fluentd.fluent.io/enabled: "true"
-spec: 
-  outputs: 
-  - elasticsearch:
-      host: elasticsearch-master.elastic.svc
-      port: 9200
-      logstashFormat: true
-      logstashPrefix: fluent-log-buffer-fd
-    buffer:
-      type: file
-      path: /buffers/es.log
-EOF
+kubectl apply -f https://raw.githubusercontent.com/kubesphere-sigs/fluent-operator-walkthrough/master/manifest/use-buffer-for-fluentd.yaml
 ```
 
 we should see the Fluentd CRs created:
