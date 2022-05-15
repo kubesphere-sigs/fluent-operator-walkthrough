@@ -44,6 +44,9 @@ You also need some kind of data sink to receive logs, in this case we set up a K
 # Setup an Elasticsearch cluster in the elastic namespace
 # run 'export INSTALL_HELM=yes' first if helm is not installed
 ./deploy-es.sh
+
+# Setup Loki
+./deploy-loki.sh
 ```
 >Note:
 > On MacOS you may have to remove the old minikube links and link the newly installed binary:
