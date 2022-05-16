@@ -339,7 +339,7 @@ spec:
     path: /var/log/containers/*.log
     # Exclude logs from util pod
     excludePath: /var/log/containers/utils_default_utils-*.log
-    parser: docker
+    parser: docker   #If it is a containerd environment, then this item should be set to cri
     refreshIntervalSeconds: 10
     memBufLimit: 5MB
     skipLongLines: true
