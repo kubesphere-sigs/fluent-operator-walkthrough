@@ -492,7 +492,7 @@ spec:
       bind: 0.0.0.0
       port: 24224
   replicas: 1
-  image: kubesphere/fluentd:v1.14.4
+  image: kubesphere/fluentd:v1.14.6
   fluentdCfgSelector: 
     matchLabels:
       config.fluentd.fluent.io/enabled: "true"
